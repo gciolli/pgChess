@@ -1,0 +1,10 @@
+* general: improve speed (currently very slow...)
+
+* performance test with different hardware (memory, CPU, disks)
+
+* add support for castling
+
+* test compact approach
+
+* rewrite some routines using faster algorithms (and maybe a different
+  language?)
