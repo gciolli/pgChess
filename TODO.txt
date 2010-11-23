@@ -1,3 +1,32 @@
+2010-11-23 23:21:00 GMT ERROR:  value for domain chessint violates check constraint "chessint_check"
+2010-11-23 23:21:00 GMT CONTEXT:  PL/pgSQL function "chesspiece_moves" line 166 at assignment
+        PL/pgSQL function "prevalid_moves" line 32 at RETURN QUERY
+        SQL statement "SELECT m.*
+                        FROM prevalid_moves(g,their_side) m
+                        WHERE g.board[m.x2][m.y2] = our_king
+                        LIMIT 1"
+        PL/pgSQL function "is_king_under_attack" line 12 at PERFORM
+        PL/pgSQL function "valid_moves" line 9 at RETURN QUERY
+        SQL statement "INSERT INTO my_moves(move_level,parent,current_game,this_move,score)
+                                        SELECT  a.move_level
+                                        ,       a.parent
+                                        ,       a.current_game
+                                        ,       a.this_move
+                                        ,       (a).current_game.score + (a.this_move).dscore
+                                        FROM (
+                                                SELECT  v_l AS move_level
+                                                ,       v_m.id AS parent
+                                                ,       v_g AS current_game
+                                                ,       valid_moves(v_g) as this_move
+                                        ) a"
+        PL/pgSQL function "ui_think_best_move" line 45 at SQL statement
+2010-11-23 23:21:00 GMT STATEMENT:  SELECT CASE WHEN ui_think_best_move(1)
+                    AND  ui_apply_best_move()
+                THEN another_move(2,1)
+                ELSE '' END;
+
+---8<------8<------8<------8<------8<------8<------8<------8<------8<---
+
 * general: improve speed (currently very slow...)
 
 * performance test with different hardware (memory, CPU, disks)

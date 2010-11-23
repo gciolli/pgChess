@@ -1,3 +1,6 @@
+--SET work_mem = 64;
+--SET temp_buffers = 100;
+SET synchronous_commit = off;
 SET client_min_messages = NOTICE;
 
 \i libpgchess.sql
