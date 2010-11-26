@@ -366,7 +366,7 @@ BEGIN
 			RAISE DEBUG E'cm3 (%,%) -> (%,%)\n[score %]',m.x1,m.y1,m.x2,m.y2,m.dscore;
 		END IF;
 		-- moving forward by 2
-		IF y = 7 AND boardside[x][y+1] IS NULL 
+		IF y = 2 AND boardside[x][y+1] IS NULL 
 			 AND boardside[x][y+2] IS NULL THEN
 			m.x2 := m.x1;
 			m.y2 := m.y1 + 2;

@@ -90,7 +90,9 @@ LANGUAGE plpgsql AS $BODY$
 DECLARE
 	v_x real;
 	v_l int;
+	v_i int;
 	v_j int;
+	v_n int;
 	v_id int;
 	v_m my_moves;
 	v_g gamestate;
@@ -125,6 +127,7 @@ BEGIN
 	FOR v_l IN 1 .. v_level LOOP
 		RAISE NOTICE 'level %', v_l;
 		v_j := 1;
+		v_n := 0;
 		FOR v_m IN
 			SELECT * FROM my_moves
 			WHERE move_level = v_l - 1
@@ -143,6 +146,23 @@ BEGIN
 					,	v_g AS current_game
 					,	valid_moves(v_g) as this_move
 				) a;
+			GET DIAGNOSTICS v_i = ROW_COUNT;
+			v_n := v_n + v_i;
+			RAISE NOTICE 'move % @ % => % moves @ %',
+				v_j,v_l,v_i,v_l+1;
+			-- DEBUG block
+			DECLARE
+				v_r RECORD;
+			BEGIN
+				FOR v_r IN
+					SELECT this_move FROM my_moves
+					WHERE parent = v_m.id
+				LOOP
+					RAISE NOTICE '  move %',
+						v_r;
+				END LOOP;
+			END;
+			-- END
 /*
 			RAISE NOTICE 'game %, move %'
 			,	CAST(v_m.id AS text)
@@ -150,9 +170,10 @@ BEGIN
 */
 			v_j := v_j + 1;
 		END LOOP;
+		RAISE NOTICE 'Total % moves @ %',v_n,v_l;
 	END LOOP;
 	SELECT count(1) INTO v_j FROM my_moves;
-	RAISE DEBUG 'Counted % moves',v_j;
+	RAISE NOTICE 'Counted % moves',v_j;
 	-- (4) choose the next move with the best score
 	WITH RECURSIVE r AS (
 		SELECT id, parent, score, id as last_move
