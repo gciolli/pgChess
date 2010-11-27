@@ -133,12 +133,17 @@ END $BODY$;
 CREATE DOMAIN chessint AS int
 	CHECK (VALUE BETWEEN 1 AND 8);
 
-CREATE TYPE gamemove AS (
-	dscore	real
-,	x1	chessint
+CREATE TYPE d_chess_square AS (
+	x1	chessint
 ,	y1	chessint
 ,	x2	chessint
 ,	y2	chessint
+);
+
+CREATE TYPE gamemove AS (
+	dscore	real
+,	mine	d_chess_square
+,	theirs	d_chess_square[]
 );
 
 CREATE TYPE gamestate AS (
@@ -189,7 +194,7 @@ BEGIN
 	END IF;
 	PERFORM m.*
 		FROM prevalid_moves(g,their_side) m
-		WHERE g.board[m.x2][m.y2] = our_king
+		WHERE g.board[(m.mine).x2][(m.mine).y2] = our_king
 		LIMIT 1;
 	IF FOUND THEN
 		RETURN true;
@@ -207,15 +212,16 @@ LANGUAGE plpgsql AS $BODY$
 DECLARE
 	s chess_square := g.board[x][y];
 	m gamemove;
+	dz d_chess_square;
 	dx int;
 	dy int;
 	v_turn int;
 	side boolean;
 	boardside boolean[] := array_fill(NULL::boolean,ARRAY[8,8]);
 BEGIN
-	m.x1 := x;
-	m.y1 := y;
---	RAISE DEBUG 'm.x1,m.y1 = %,% while x,y = %,%',m.x1,m.y1,x,y;
+	dz.x1 := x;
+	dz.y1 := y;
+--	RAISE DEBUG 'dz.x1,dz.y1 = %,% while x,y = %,%',dz.x1,dz.y1,x,y;
 	-- (1) compiling boardside[]
 	v_turn := COALESCE(array_upper((g).moves,1),0);
 	IF v_turn % 2 = 0 THEN
@@ -233,172 +239,185 @@ BEGIN
 	IF s = 'Black Queen' OR  s = 'White Queen' THEN
 		RAISE DEBUG 'Qq';
 		FOR dx,dy IN VALUES (0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1) LOOP
-			m.x2 := m.x1;
-			m.y2 := m.y1;
+			dz.x2 := dz.x1;
+			dz.y2 := dz.y1;
 			<<loop1>>
 			FOR r IN 1 .. 7 LOOP
-				m.x2 := CASE WHEN m.x2 + dx BETWEEN 1 AND 8 THEN m.x2 + dx ELSE NULL END;
-				m.y2 := CASE WHEN m.y2 + dy BETWEEN 1 AND 8 THEN m.y2 + dy ELSE NULL END;
-				EXIT loop1 WHEN m.x2 IS NULL OR m.y2 IS NULL;
-				EXIT loop1 WHEN boardside[m.x2][m.y2] = side;
-				m.dscore := score_of_chess_square((g).board[m.x2][m.y2]);
+				dz.x2 := CASE WHEN dz.x2 + dx BETWEEN 1 AND 8 THEN dz.x2 + dx ELSE NULL END;
+				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
+				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
+				m.dscore := score_of_chess_square((g).board[dz.x2][dz.y2]);
+				m.mine := dz;
 				RETURN NEXT m;
-				EXIT loop1 WHEN boardside[m.x2][m.y2] = NOT side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Rook' OR  s = 'White Rook' THEN
 		RAISE DEBUG 'Rr';
 		FOR dx,dy IN VALUES (0,1),(1,0),(0,-1),(-1,0) LOOP
-			m.x2 := m.x1;
-			m.y2 := m.y1;
+			dz.x2 := dz.x1;
+			dz.y2 := dz.y1;
 			<<loop1>>
 			FOR r IN 1 .. 7 LOOP
-				m.x2 := CASE WHEN m.x2 + dx BETWEEN 1 AND 8 THEN m.x2 + dx ELSE NULL END;
-				m.y2 := CASE WHEN m.y2 + dy BETWEEN 1 AND 8 THEN m.y2 + dy ELSE NULL END;
-				EXIT loop1 WHEN m.x2 IS NULL OR m.y2 IS NULL;
-				EXIT loop1 WHEN boardside[m.x2][m.y2] = side;
-				m.dscore := score_of_chess_square((g).board[m.x2][m.y2]);
+				dz.x2 := CASE WHEN dz.x2 + dx BETWEEN 1 AND 8 THEN dz.x2 + dx ELSE NULL END;
+				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
+				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
+				m.dscore := score_of_chess_square((g).board[dz.x2][dz.y2]);
+				m.mine := dz;
 				RETURN NEXT m;
-				EXIT loop1 WHEN boardside[m.x2][m.y2] = NOT side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Bishop' OR  s = 'White Bishop' THEN
 		RAISE DEBUG 'Bb';
 		FOR dx,dy IN VALUES (1,1),(1,-1),(-1,-1),(-1,1) LOOP
-			m.x2 := m.x1;
-			m.y2 := m.y1;
+			dz.x2 := dz.x1;
+			dz.y2 := dz.y1;
 			<<loop1>>
 			FOR r IN 1 .. 7 LOOP
-				m.x2 := CASE WHEN m.x2 + dx BETWEEN 1 AND 8 THEN m.x2 + dx ELSE NULL END;
-				m.y2 := CASE WHEN m.y2 + dy BETWEEN 1 AND 8 THEN m.y2 + dy ELSE NULL END;
-				EXIT loop1 WHEN m.x2 IS NULL OR m.y2 IS NULL;
-				EXIT loop1 WHEN boardside[m.x2][m.y2] = side;
-				m.dscore := score_of_chess_square((g).board[m.x2][m.y2]);
+				dz.x2 := CASE WHEN dz.x2 + dx BETWEEN 1 AND 8 THEN dz.x2 + dx ELSE NULL END;
+				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
+				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
+				m.dscore := score_of_chess_square((g).board[dz.x2][dz.y2]);
+				m.mine := dz;
 				RETURN NEXT m;
-				EXIT loop1 WHEN boardside[m.x2][m.y2] = NOT side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Knight' OR  s = 'White Knight' THEN
 		RAISE DEBUG 'Nn';
 		FOR dx,dy IN VALUES (1,2),(1,-2),(-1,-2),(-1,2),(2,1),(2,-1),(-2,-1),(-2,1) LOOP
-			m.x2 := m.x1;
-			m.y2 := m.y1;
+			dz.x2 := dz.x1;
+			dz.y2 := dz.y1;
 			<<loop1>>
 			FOR r IN 1 .. 1 LOOP
-				m.x2 := CASE WHEN m.x2 + dx BETWEEN 1 AND 8 THEN m.x2 + dx ELSE NULL END;
-				m.y2 := CASE WHEN m.y2 + dy BETWEEN 1 AND 8 THEN m.y2 + dy ELSE NULL END;
-				EXIT loop1 WHEN m.x2 IS NULL OR m.y2 IS NULL;
-				EXIT loop1 WHEN boardside[m.x2][m.y2] = side;
-				m.dscore := score_of_chess_square((g).board[m.x2][m.y2]);
+				dz.x2 := CASE WHEN dz.x2 + dx BETWEEN 1 AND 8 THEN dz.x2 + dx ELSE NULL END;
+				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
+				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
+				m.dscore := score_of_chess_square((g).board[dz.x2][dz.y2]);
+				m.mine := dz;
 				RETURN NEXT m;
-				EXIT loop1 WHEN boardside[m.x2][m.y2] = NOT side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black King' OR  s = 'White King' THEN
 		RAISE DEBUG 'Kk';
 		FOR dx,dy IN VALUES (0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1) LOOP
-			m.x2 := m.x1;
-			m.y2 := m.y1;
+			dz.x2 := dz.x1;
+			dz.y2 := dz.y1;
 			<<loop1>>
 			FOR r IN 1 .. 1 LOOP
-				m.x2 := CASE WHEN m.x2 + dx BETWEEN 1 AND 8 THEN m.x2 + dx ELSE NULL END;
-				m.y2 := CASE WHEN m.y2 + dy BETWEEN 1 AND 8 THEN m.y2 + dy ELSE NULL END;
-				EXIT loop1 WHEN m.x2 IS NULL OR m.y2 IS NULL;
-				EXIT loop1 WHEN boardside[m.x2][m.y2] = side;
-				m.dscore := score_of_chess_square((g).board[m.x2][m.y2]);
+				dz.x2 := CASE WHEN dz.x2 + dx BETWEEN 1 AND 8 THEN dz.x2 + dx ELSE NULL END;
+				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
+				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
+				m.dscore := score_of_chess_square((g).board[dz.x2][dz.y2]);
+				m.mine := dz;
 				RETURN NEXT m;
-				EXIT loop1 WHEN boardside[m.x2][m.y2] = NOT side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Pawn' THEN
 		RAISE DEBUG 'P';
 		-- moving forward by 1
 		IF boardside[x][y-1] IS NULL THEN
-			m.x2 := m.x1;
-			m.y2 := m.y1 - 1;
-			m.dscore := CASE WHEN m.y2 = 1 THEN 9 ELSE 0 END;
+			dz.x2 := dz.x1;
+			dz.y2 := dz.y1 - 1;
+			m.dscore := CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
+			m.mine := dz;
 			RETURN NEXT m;
-			RAISE DEBUG E'cm1 (%,%) -> (%,%)\n[score %]',m.x1,m.y1,m.x2,m.y2,m.dscore;
+			RAISE DEBUG E'cm1 (%,%) -> (%,%)\n[score %]',dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- moving forward by 2
 		IF y = 7 AND boardside[x][y-1] IS NULL 
 			 AND boardside[x][y-2] IS NULL THEN
-			m.x2 := m.x1;
-			m.y2 := m.y1 - 2;
+			dz.x2 := dz.x1;
+			dz.y2 := dz.y1 - 2;
 			m.dscore := 0;
+			m.mine := dz;
 			RETURN NEXT m;
-			RAISE DEBUG E'cm2 (%,%) -> (%,%)\n[score %]',m.x1,m.y1,m.x2,m.y2,m.dscore;
+			RAISE DEBUG E'cm2 (%,%) -> (%,%)\n[score %]',dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- capturing left
 		IF x > 1 AND boardside[x-1][y-1] = NOT side THEN
-			m.x2 := m.x1 - 1;
-			m.y2 := m.y1 - 1;
+			dz.x2 := dz.x1 - 1;
+			dz.y2 := dz.y1 - 1;
 			RAISE DEBUG '% @ (%,%) captures % @ (%,%) on the left',
 				(g).board[x][y],x,y,
-				(g).board[m.x2][m.y2],m.x2,m.y2;
+				(g).board[dz.x2][dz.y2],dz.x2,dz.y2;
 			m.dscore := 
-				score_of_chess_square((g).board[m.x2][m.y2])
-				+ CASE WHEN m.y2 = 1 THEN 9 ELSE 0 END;
+				score_of_chess_square((g).board[dz.x2][dz.y2])
+				+ CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
+			m.mine := dz;
 			RETURN NEXT m;
-			RAISE DEBUG E'cml (%,%) -< (%,%)\n[score %]',m.x1,m.y1,m.x2,m.y2,m.dscore;
+			RAISE DEBUG E'cml (%,%) -< (%,%)\n[score %]',dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- capturing right
 		IF x < 8 AND boardside[x+1][y-1] = NOT side THEN
-			m.x2 := m.x1 + 1;
-			m.y2 := m.y1 - 1;
+			dz.x2 := dz.x1 + 1;
+			dz.y2 := dz.y1 - 1;
 			RAISE DEBUG '% @ (%,%) captures % @ (%,%) on the right',
 				(g).board[x][y],x,y,
-				(g).board[m.x2][m.y2],m.x2,m.y2;
+				(g).board[dz.x2][dz.y2],dz.x2,dz.y2;
 			m.dscore := 
-				score_of_chess_square((g).board[m.x2][m.y2])
-				+ CASE WHEN m.y2 = 1 THEN 9 ELSE 0 END;
+				score_of_chess_square((g).board[dz.x2][dz.y2])
+				+ CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
+			m.mine := dz;
 			RETURN NEXT m;
-			RAISE DEBUG E'cmr (%,%) -< (%,%)\n[score %]',m.x1,m.y1,m.x2,m.y2,m.dscore;
+			RAISE DEBUG E'cmr (%,%) -< (%,%)\n[score %]',dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 	ELSIF s = 'White Pawn' THEN
 		RAISE DEBUG 'p';
 		-- moving forward by 1
 		IF boardside[x][y+1] IS NULL THEN
-			m.x2 := m.x1;
-			m.y2 := m.y1 + 1;
-			m.dscore := CASE WHEN m.y2 = 8 THEN 9 ELSE 0 END;
+			dz.x2 := dz.x1;
+			dz.y2 := dz.y1 + 1;
+			m.dscore := CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
+			m.mine := dz;
 			RETURN NEXT m;
-			RAISE DEBUG E'cm3 (%,%) -> (%,%)\n[score %]',m.x1,m.y1,m.x2,m.y2,m.dscore;
+			RAISE DEBUG E'cm3 (%,%) -> (%,%)\n[score %]',dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- moving forward by 2
 		IF y = 2 AND boardside[x][y+1] IS NULL 
 			 AND boardside[x][y+2] IS NULL THEN
-			m.x2 := m.x1;
-			m.y2 := m.y1 + 2;
+			dz.x2 := dz.x1;
+			dz.y2 := dz.y1 + 2;
 			m.dscore := 0;
+			m.mine := dz;
 			RETURN NEXT m;
-			RAISE DEBUG E'cm4 (%,%) -> (%,%)\n[score %]',m.x1,m.y1,m.x2,m.y2,m.dscore;
+			RAISE DEBUG E'cm4 (%,%) -> (%,%)\n[score %]',dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- capturing left
 		IF x > 1 AND boardside[x-1][y+1] = NOT side THEN
-			m.x2 := m.x1 - 1;
-			m.y2 := m.y1 + 1;
+			dz.x2 := dz.x1 - 1;
+			dz.y2 := dz.y1 + 1;
 			RAISE DEBUG '% @ (%,%) captures % @ (%,%) on the left',
 				(g).board[x][y],x,y,
-				(g).board[m.x2][m.y2],m.x2,m.y2;
+				(g).board[dz.x2][dz.y2],dz.x2,dz.y2;
 			m.dscore := 
-				score_of_chess_square((g).board[m.x2][m.y2])
-				+ CASE WHEN m.y2 = 8 THEN 9 ELSE 0 END;
+				score_of_chess_square((g).board[dz.x2][dz.y2])
+				+ CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
+			m.mine := dz;
 			RETURN NEXT m;
-			RAISE DEBUG E'cml (%,%) -< (%,%)\n[score %]',m.x1,m.y1,m.x2,m.y2,m.dscore;
+			RAISE DEBUG E'cml (%,%) -< (%,%)\n[score %]',dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- capturing right
 		IF x < 8 AND boardside[x+1][y+1] = NOT side THEN
-			m.x2 := m.x1 + 1;
-			m.y2 := m.y1 + 1;
+			dz.x2 := dz.x1 + 1;
+			dz.y2 := dz.y1 + 1;
 			RAISE DEBUG '% @ (%,%) captures % @ (%,%) on the right',
 				(g).board[x][y],x,y,
-				(g).board[m.x2][m.y2],m.x2,m.y2;
+				(g).board[dz.x2][dz.y2],dz.x2,dz.y2;
 			m.dscore := 
-				score_of_chess_square((g).board[m.x2][m.y2])
-				+ CASE WHEN m.y2 = 8 THEN 9 ELSE 0 END;
+				score_of_chess_square((g).board[dz.x2][dz.y2])
+				+ CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
+			m.mine := dz;
 			RETURN NEXT m;
-			RAISE DEBUG E'cmr (%,%) -< (%,%)\n[score %]',m.x1,m.y1,m.x2,m.y2,m.dscore;
+			RAISE DEBUG E'cmr (%,%) -< (%,%)\n[score %]',dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 	ELSE
 		RAISE EXCEPTION 'unsupported chess_square %',s;
@@ -482,21 +501,22 @@ CREATE FUNCTION apply_move(
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
-	this_side boolean := side_of_chess_square(v_g.board[v_m.x1][v_m.y1]);
+	this_side boolean;
 BEGIN
+	this_side := side_of_chess_square(v_g.board[(v_m).mine.x1][(v_m).mine.y1]);
 	RAISE DEBUG 'apply_move BEGIN %',clock_timestamp();
 	RAISE DEBUG 'apply_move #% % : % (%,%) -> (%,%)',
 		COALESCE(array_upper((v_g).moves,1),0),
-		v_g.board[v_m.x1][v_m.y1],
-		v_m.dscore,v_m.x1,v_m.y1,v_m.x2,v_m.y2;
+		v_g.board[(v_m).mine.x1][(v_m).mine.y1],
+		(v_m).dscore,(v_m).mine.x1,(v_m).mine.y1,(v_m).mine.x2,(v_m).mine.y2;
 	-- (1) apply the move
-	v_g.board[v_m.x2][v_m.y2] := (v_g).board[v_m.x1][v_m.y1];
+	v_g.board[(v_m).mine.x2][(v_m).mine.y2] := (v_g).board[(v_m).mine.x1][(v_m).mine.y1];
 	-- (2) promote Pawns to Queens
-	IF v_g.board[v_m.x2][v_m.y2] = 'Black Pawn' AND v_m.y2 = 1 THEN
-		v_g.board[v_m.x2][v_m.y2] := 'Black Queen';
+	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'Black Pawn' AND (v_m).mine.y2 = 1 THEN
+		v_g.board[(v_m).mine.x2][(v_m).mine.y2] := 'Black Queen';
 	END IF;
-	IF v_g.board[v_m.x2][v_m.y2] = 'White Pawn' AND v_m.y2 = 8 THEN
-		v_g.board[v_m.x2][v_m.y2] := 'White Queen';
+	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'White Pawn' AND (v_m).mine.y2 = 8 THEN
+		v_g.board[(v_m).mine.x2][(v_m).mine.y2] := 'White Queen';
 	END IF;
 --?	-- (3) refresh the under_attack grid, for the convenience of
 --?	-- the next player
@@ -510,7 +530,7 @@ BEGIN
 --?	END LOOP;
 --?	END LOOP;
 	-- (4) empty the old position
-	v_g.board[v_m.x1][v_m.y1] := NULL;
+	v_g.board[(v_m).mine.x1][(v_m).mine.y1] := NULL;
 	-- (5) remember the move
 	v_g.moves := v_g.moves || v_m;
 	RAISE DEBUG 'apply_move => %',display(v_g);
