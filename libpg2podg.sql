@@ -207,8 +207,35 @@ BEGIN
 END;
 $BODY$;
 
+/* The another_move function has two arguments. If the first argument
+   is 1, then the next move will have 2 as the next argument. If the
+   first argument has zero, then the next argument will be */
+
 CREATE OR REPLACE FUNCTION another_move( int , int ) RETURNS text
-LANGUAGE SQL AS $BODY$ SELECT $code$
+LANGUAGE SQL AS $BODY$ SELECT 
+CASE WHEN $1 = 0 THEN $code$
+----------------------------------------
+-- if $1 = 0
+----------------------------------------
+SELECT ui_display();
+\prompt 'Your next move? ' my_next_move
+\o varfile$code$
+	|| CAST($1 AS text)
+	|| $code$.sql
+SELECT CASE WHEN chess_parse_user_move(:'my_next_move')
+	THEN another_move($code$
+	|| CAST(3 - $1 AS text)
+	|| $code$,$code$
+	|| CAST($2 AS text)
+	|| $code$)
+	ELSE '' END;
+\o
+\i varfile$code$ || CAST($1 AS text) || $code$.sql
+----------------------------------------
+$code$ ELSE $code$
+----------------------------------------
+-- if $1 > 0
+----------------------------------------
 SELECT ui_display();
 \qecho BEGIN waiting...
 SELECT pg_sleep(1);
@@ -229,4 +256,5 @@ SELECT CASE WHEN ui_think_best_move($code$
 \o
 \i varfile$code$ || CAST($1 AS text) || $code$.sql
 $code$
-$BODY$;
+----------------------------------------
+END $BODY$;
