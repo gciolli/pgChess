@@ -191,3 +191,32 @@ Let us reason in terms of 4-bit numbers.
 
 We could expand 13 to (0,0), 14 to (0,0,0,0) and 15 to
 (0,0,0,0,0,0,0,0).
+
+h2. Avoiding duplicate computations
+
+Move := datum of "(x1,y1) -> (x2,y2)" (:d_chess_square), in the
+     	context of a gamestate
+
+Prevalid move := move M allowed by the movement rules of the piece
+
+Valid move := prevalid move M which does not leave own King under
+      	      attack, endowed with the list of all the possible
+      	      prevalid moves that follow M
+
+The algorithm to compute the list of valid moves is:
+
+  * IF G.next_moves THEN
+       G.next_moves := prevalid moves(G);
+    END IF;
+  * for each prevalid move M, compute the list of possible prevalid
+    moves P_1,...,P_n that can follow M
+  * if there is a P_i that attacks the King, then M is not a valid move;
+    otherwise:
+    
+      M.mine := ROW(x1,y1,x2,y2)::d_chess_square
+      M.theirs := ARRAY[P_1,...,P_n]
+      M.dscore := dscore_of_gamemove(current_gamestate,M.mine)
+      RETURN NEXT M;
+
+This algorithm will produce a list of valid moves.
+

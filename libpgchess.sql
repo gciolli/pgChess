@@ -150,7 +150,7 @@ CREATE TYPE gamestate AS (
 	score		real
 ,	moves		gamemove[]
 ,	board		chess_square[]
---,	under_attack	boolean[]
+,	next_moves	gamemove[]
 );
 
 ------------------------------------------------------------
@@ -486,6 +486,16 @@ BEGIN
 	ELSE
 		side := false;
 	END IF;
+	-- FIXME: the list of prevalid moves should already be stored
+	-- inside v_g, as they have been computed to ensure that v_g
+	-- was a legitimate status. However we have to allow for the
+	-- case when they aren't there, which can happen at the very
+	-- start of the game, i.e. when v_g has not been obtained by
+	-- applying a move to a previous state. Alternatively we could
+	-- have a separate function "compute_prevalid_moves" to be
+	-- invoked from within starting_gamestate(), and skip this
+	-- check, which on second thought seems like a better
+	-- strategy.
 	RETURN QUERY
 		SELECT m1.*
 		FROM prevalid_moves(v_g,side) m1
