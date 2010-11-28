@@ -88,6 +88,7 @@ CREATE FUNCTION ui_think_best_move(
 ) RETURNS boolean
 LANGUAGE plpgsql AS $BODY$
 DECLARE
+	procname text := 'ui_think_best_move';
 	v_x real;
 	v_l int;
 	v_i int;
@@ -101,7 +102,7 @@ DECLARE
 	t1 timestamp;
 BEGIN
 	t1 := clock_timestamp();
-	RAISE NOTICE 'BEGIN ui_think_best_move';
+	RAISE NOTICE '[%] BEGIN', procname;
 	v_coeff := CASE WHEN COALESCE(array_upper((v_g).moves,1),0) % 2 = 0 THEN 1 ELSE -1 END;
 	-- (0) is the game settled?
 	SELECT (game).score INTO STRICT v_x FROM my_games;
@@ -110,11 +111,11 @@ BEGIN
 	ELSIF v_x = '-Infinity' THEN
 		RAISE EXCEPTION 'The game is settled: false wins';
 	ELSE
-		RAISE DEBUG 'The game is not yet settled, keep playing';
+		RAISE DEBUG '[%] The game is not yet settled, keep playing',procname;
 	END IF;
-	-- (1) reset available moves
+	RAISE DEBUG '[%] (1) reset available moves',procname;
 	TRUNCATE my_moves;
-	-- (2) insert all the possible next moves
+	RAISE DEBUG '[%] (2) insert all the possible next moves',procname;
 	INSERT INTO my_moves(current_game,this_move,move_level,score)
 		SELECT	a.game
 		,	a.move
@@ -123,16 +124,16 @@ BEGIN
 		FROM (
 		SELECT game, valid_moves(game) as move
 		FROM my_games) a;
-	-- (3) compute subsequent moves, up to level v_level
+	RAISE DEBUG '[%] (3) compute subsequent moves, up to level v_level',procname;
 	FOR v_l IN 1 .. v_level LOOP
-		RAISE NOTICE 'level %', v_l;
+		RAISE NOTICE '[%] level %',procname,v_l;
 		v_j := 1;
 		v_n := 0;
 		FOR v_m IN
 			SELECT * FROM my_moves
 			WHERE move_level = v_l - 1
 		LOOP
-			RAISE DEBUG 'looping over v_m: %', v_m;
+			RAISE DEBUG '[%] looping over v_m: %',procname,v_m;
 			v_g := apply_move(v_m.current_game,v_m.this_move);
 			INSERT INTO my_moves(move_level,parent,current_game,this_move,score)
 				SELECT	a.move_level
@@ -148,8 +149,7 @@ BEGIN
 				) a;
 			GET DIAGNOSTICS v_i = ROW_COUNT;
 			v_n := v_n + v_i;
-			RAISE NOTICE 'move % @ % => % moves @ %',
-				v_j,v_l,v_i,v_l+1;
+			RAISE NOTICE '[%] move % @ L% => % moves @ L%',procname,v_j,v_l,v_i,v_l+1;
 			-- DEBUG block
 			DECLARE
 				v_r RECORD;
@@ -158,8 +158,7 @@ BEGIN
 					SELECT this_move FROM my_moves
 					WHERE parent = v_m.id
 				LOOP
-					RAISE NOTICE '  move %',
-						v_r;
+					RAISE DEBUG '[%]  move %',procname,v_r;
 				END LOOP;
 			END;
 			-- END
@@ -170,11 +169,11 @@ BEGIN
 */
 			v_j := v_j + 1;
 		END LOOP;
-		RAISE NOTICE 'Total % moves @ %',v_n,v_l;
+		RAISE NOTICE '[%] Total % moves @ %',procname,v_n,v_l;
 	END LOOP;
 	SELECT count(1) INTO v_j FROM my_moves;
-	RAISE NOTICE 'Counted % moves',v_j;
-	-- (4) choose the next move with the best score
+	RAISE NOTICE '[%] Counted % moves',procname,v_j;
+	RAISE DEBUG '[%] (4) choose the next move with the best score',procname;
 	WITH RECURSIVE r AS (
 		SELECT id, parent, score, id as last_move
 		FROM my_moves
@@ -192,17 +191,16 @@ BEGIN
 	ORDER BY 2 DESC
 	LIMIT 1;
 	IF NOT FOUND THEN
-		RAISE NOTICE 'Stale';
+		RAISE NOTICE '[%] Stale',procname;
 		RETURN false;
 	END IF;
-	RAISE DEBUG 'Move % seems to be the best one with a score of %', v_id, v_x;
-	-- (5) clean up my_moves
+	RAISE DEBUG '[%] Move % seems to be the best one with a score of %',procname,v_id,v_x;
+	RAISE DEBUG '[%] (5) clean up my_moves',procname;
 	SELECT m.* INTO STRICT v_m
 	FROM my_moves m WHERE id = v_id;
 	TRUNCATE my_moves;
 	INSERT INTO my_moves SELECT v_m.*;
-	RAISE NOTICE 'END ui_think_best_move: dt = %',
-		clock_timestamp() - t1;
+	RAISE NOTICE '[%] END: dt = %',procname, clock_timestamp() - t1;
 	RETURN true;
 END;
 $BODY$;
