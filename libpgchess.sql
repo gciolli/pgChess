@@ -430,6 +430,8 @@ CREATE FUNCTION prevalid_moves (
 ,	side	boolean
 ) RETURNS SETOF gamemove
 LANGUAGE plpgsql AS $BODY$
+-- This function produces the set of prevalid moves starting from
+-- configuration v_g, assuming that side "side" is about to move.
 DECLARE
 	x chessint;
 	y chessint;
@@ -478,29 +480,45 @@ CREATE FUNCTION valid_moves (
 	v_g	gamestate
 ) RETURNS SETOF gamemove
 LANGUAGE plpgsql AS $BODY$
+-- This function produces the set of valid moves starting from
+-- configuration v_g. This is obtained by (a) taking all the prevalid
+-- moves, (b) endowing each prevalid move with the list of possible
+-- "answers", and finally (c) using the information in (b) to select
+-- only those moves that do not leave the King under attack.
 DECLARE
 	side boolean;
+	rec  record;
 BEGIN
+	-- (*) Whose side is playing now?
 	IF COALESCE(array_upper((v_g).moves,1),0) % 2 = 0 THEN
 		side := true;
 	ELSE
 		side := false;
 	END IF;
 	-- FIXME: the list of prevalid moves should already be stored
-	-- inside v_g, as they have been computed to ensure that v_g
-	-- was a legitimate status. However we have to allow for the
-	-- case when they aren't there, which can happen at the very
-	-- start of the game, i.e. when v_g has not been obtained by
-	-- applying a move to a previous state. Alternatively we could
-	-- have a separate function "compute_prevalid_moves" to be
-	-- invoked from within starting_gamestate(), and skip this
-	-- check, which on second thought seems like a better
-	-- strategy.
+	-- in v_g.next_moves, as they have been already computed to
+	-- ensure that v_g was a legitimate status. However we have to
+	-- allow for the case when they aren't there, which can happen
+	-- at the very start of the game, i.e. when v_g has not been
+	-- obtained by applying a move to a previous
+	-- state. Alternatively we could have a separate function
+	-- "compute_prevalid_moves" to be invoked from within
+	-- starting_gamestate(), and skip this check, which on second
+	-- thought seems like a better strategy.
+--WIP	IF v_g.next_moves IS NULL THEN
+--WIP		SELECT array_agg(prevalid_moves(v_g,side))
+--WIP		INTO v_g.next_moves;
+--WIP	END IF;
+--WIP	FOR i IN 1 .. array_upper((v_g).next_moves,1) LOOP
+--WIP		RAISE NOTICE 'considering move #% = %',i,v_g.next_moves[i];
+--WIP		IF is_king_under_attack(apply_move(v_g,v_g.next_moves[i])) THEN
+--WIP			FIXME;
+--WIP		END IF;
+--WIP	END LOOP;
 	RETURN QUERY
 		SELECT m1.*
 		FROM prevalid_moves(v_g,side) m1
 		WHERE NOT is_king_under_attack(apply_move(v_g,m1.*));
-		-- FIXME
 END;
 $BODY$;
 
