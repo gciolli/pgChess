@@ -113,9 +113,9 @@ BEGIN
 	ELSE
 		RAISE DEBUG '[%] The game is not yet settled, keep playing',procname;
 	END IF;
-	RAISE DEBUG '[%] (1) reset available moves',procname;
+	RAISE NOTICE '[%] (1) reset available moves',procname;
 	TRUNCATE my_moves;
-	RAISE DEBUG '[%] (2) insert all the possible next moves',procname;
+	RAISE NOTICE '[%] (2) insert all the possible next moves',procname;
 	INSERT INTO my_moves(current_game,this_move,move_level,score)
 		SELECT	a.game
 		,	a.move
@@ -124,9 +124,9 @@ BEGIN
 		FROM (
 		SELECT game, valid_moves(game) as move
 		FROM my_games) a;
-	RAISE DEBUG '[%] (3) compute subsequent moves, up to level v_level',procname;
+	RAISE NOTICE '[%] (3) compute subsequent moves, up to level v_level',procname;
 	FOR v_l IN 1 .. v_level LOOP
-		RAISE NOTICE '[%] level %',procname,v_l;
+		RAISE NOTICE '[%] (3.1) level %',procname,v_l;
 		v_j := 1;
 		v_n := 0;
 		FOR v_m IN
@@ -150,18 +150,18 @@ BEGIN
 			GET DIAGNOSTICS v_i = ROW_COUNT;
 			v_n := v_n + v_i;
 			RAISE NOTICE '[%] move % @ L% => % moves @ L%',procname,v_j,v_l,v_i,v_l+1;
-			-- DEBUG block
-			DECLARE
-				v_r RECORD;
-			BEGIN
-				FOR v_r IN
-					SELECT this_move FROM my_moves
-					WHERE parent = v_m.id
-				LOOP
-					RAISE DEBUG '[%]  move %',procname,v_r;
-				END LOOP;
-			END;
-			-- END
+--			-- DEBUG block
+--			DECLARE
+--				v_r RECORD;
+--			BEGIN
+--				FOR v_r IN
+--					SELECT this_move FROM my_moves
+--					WHERE parent = v_m.id
+--				LOOP
+--					RAISE DEBUG '[%]  move %',procname,v_r;
+--				END LOOP;
+--			END;
+--			-- END
 /*
 			RAISE NOTICE 'game %, move %'
 			,	CAST(v_m.id AS text)
