@@ -144,7 +144,6 @@ CREATE TYPE d_chess_square AS (
 CREATE TYPE gamemove AS (
 	dscore	real
 ,	mine	d_chess_square
---,	theirs	d_chess_square[]
 );
 
 CREATE TYPE gamestate AS (
