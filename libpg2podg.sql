@@ -36,30 +36,10 @@ CREATE FUNCTION ui_display()
 RETURNS SETOF text
 LANGUAGE plpgsql AS $BODY$
 BEGIN
-	/*
-	RETURN NEXT '
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-';
-	*/
 	RETURN QUERY SELECT count(1) || ' my_moves' FROM my_moves;
 	RETURN QUERY SELECT count(1) || ' my_games' FROM my_games;
 	RETURN QUERY
-		SELECT display(game) --,t,id,(game).moves
+		SELECT display(game)
 		FROM my_games
 		ORDER BY t DESC
 		LIMIT 1;
@@ -88,12 +68,8 @@ CREATE FUNCTION ui_think_best_move(
 ) RETURNS boolean
 LANGUAGE plpgsql AS $BODY$
 DECLARE
-	procname text := 'ui_think_best_move';
 	v_x real;
 	v_l int;
-	v_i int;
-	v_j int;
-	v_n int;
 	v_id int;
 	v_m my_moves;
 	v_g gamestate;
@@ -102,7 +78,6 @@ DECLARE
 	t1 timestamp;
 BEGIN
 	t1 := clock_timestamp();
-	RAISE NOTICE '[%] BEGIN', procname;
 	v_coeff := CASE WHEN COALESCE(array_upper((v_g).moves,1),0) % 2 = 0 THEN 1 ELSE -1 END;
 	-- (0) is the game settled?
 	SELECT (game).score INTO STRICT v_x FROM my_games;
@@ -110,12 +85,10 @@ BEGIN
 		RAISE EXCEPTION 'The game is settled: true wins';
 	ELSIF v_x = '-Infinity' THEN
 		RAISE EXCEPTION 'The game is settled: false wins';
-	ELSE
-		RAISE DEBUG '[%] The game is not yet settled, keep playing',procname;
 	END IF;
-	RAISE NOTICE '[%] (1) reset available moves',procname;
+	-- (1) reset available moves
 	TRUNCATE my_moves;
-	RAISE NOTICE '[%] (2) insert all the possible next moves',procname;
+	-- (2) insert all the possible next moves
 	INSERT INTO my_moves(current_game,this_move,move_level,score)
 		SELECT	a.game
 		,	a.move
@@ -124,16 +97,12 @@ BEGIN
 		FROM (
 		SELECT game, valid_moves(game) as move
 		FROM my_games) a;
-	RAISE NOTICE '[%] (3) compute subsequent moves, up to level v_level',procname;
+	-- (3) compute subsequent moves, up to level v_level
 	FOR v_l IN 1 .. v_level LOOP
-		RAISE NOTICE '[%] (3.1) level %',procname,v_l;
-		v_j := 1;
-		v_n := 0;
 		FOR v_m IN
 			SELECT * FROM my_moves
 			WHERE move_level = v_l - 1
 		LOOP
-			RAISE DEBUG '[%] looping over v_m: %',procname,v_m;
 			v_g := apply_move(v_m.current_game,v_m.this_move);
 			INSERT INTO my_moves(move_level,parent,current_game,this_move,score)
 				SELECT	a.move_level
@@ -147,33 +116,8 @@ BEGIN
 					,	v_g AS current_game
 					,	valid_moves(v_g) as this_move
 				) a;
-			GET DIAGNOSTICS v_i = ROW_COUNT;
-			v_n := v_n + v_i;
-			RAISE NOTICE '[%] move % @ L% => % moves @ L%',procname,v_j,v_l,v_i,v_l+1;
---			-- DEBUG block
---			DECLARE
---				v_r RECORD;
---			BEGIN
---				FOR v_r IN
---					SELECT this_move FROM my_moves
---					WHERE parent = v_m.id
---				LOOP
---					RAISE DEBUG '[%]  move %',procname,v_r;
---				END LOOP;
---			END;
---			-- END
-/*
-			RAISE NOTICE 'game %, move %'
-			,	CAST(v_m.id AS text)
-			,	CAST(v_m.this_move AS text);
-*/
-			v_j := v_j + 1;
 		END LOOP;
-		RAISE NOTICE '[%] Total % moves @ %',procname,v_n,v_l;
 	END LOOP;
-	SELECT count(1) INTO v_j FROM my_moves;
-	RAISE NOTICE '[%] Counted % moves',procname,v_j;
-	RAISE DEBUG '[%] (4) choose the next move with the best score',procname;
 	WITH RECURSIVE r AS (
 		SELECT id, parent, score, id as last_move
 		FROM my_moves
@@ -191,26 +135,25 @@ BEGIN
 	ORDER BY 2 DESC
 	LIMIT 1;
 	IF NOT FOUND THEN
-		RAISE NOTICE '[%] Stale',procname;
+		RAISE NOTICE '[%] Stale';
 		RETURN false;
 	END IF;
-	RAISE DEBUG '[%] Move % seems to be the best one with a score of %',procname,v_id,v_x;
-	RAISE DEBUG '[%] (5) clean up my_moves',procname;
+	-- (4) clean up my_moves
 	SELECT m.* INTO STRICT v_m
 	FROM my_moves m WHERE id = v_id;
 	TRUNCATE my_moves;
 	INSERT INTO my_moves SELECT v_m.*;
-	RAISE NOTICE '[%] END: dt = %',procname, clock_timestamp() - t1;
 	RETURN true;
 END;
 $BODY$;
 
-/* The another_move function has two arguments. If the first argument
-   is 1, then the next move will have 2 as the next argument. If the
-   first argument has zero, then the next argument will be */
-
 CREATE OR REPLACE FUNCTION another_move( int , int ) RETURNS text
-LANGUAGE SQL AS $BODY$ SELECT 
+LANGUAGE SQL AS $BODY$
+-- This function has two arguments. It produces a text that invokes
+-- the same function, with first argument 3 - $1. This allows to
+-- implement CPU v CPU (setting either 1 or 2), Human v CPU (setting
+-- 0) or CPU v Human (setting 3).
+SELECT 
 CASE WHEN $1 = 0 THEN $code$
 ----------------------------------------
 -- if $1 = 0

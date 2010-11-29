@@ -184,37 +184,14 @@ CREATE FUNCTION is_king_under_attack(
 ,	our_side	boolean
 ) RETURNS boolean LANGUAGE plpgsql AS $BODY$
 DECLARE
-	procname	text := 'ikua';
---	their_side	boolean;
---??	our_king	chess_square;
 	our_king	chess_square := CASE WHEN our_side = true THEN 'White King' ELSE 'Black King' END;
 	i		int;
 BEGIN
---	IF COALESCE(array_upper((g).moves,1),0) % 2 = 1 THEN
---		their_side := false;
---		our_king := 'White King';
---	ELSE
---		their_side := true;
---		our_king := 'Black King';
---	END IF;
---??	IF our_side = true THEN
---??		our_king := 'White King';
---??	ELSE
---??		our_king := 'Black King';
---??	END IF;
---?	RAISE DEBUG '[%] g = %',procname,g;
---?	IF (g).next_moves IS NULL THEN
---?		RAISE EXCEPTION '[%] g.next_moves IS NULL',procname;
---?	ELSE
---?		RAISE DEBUG '[%] g.next_moves = %',procname,g.next_moves;
---?	END IF;
 	FOR i IN 1 .. array_upper(g.next_moves,1) LOOP
 		IF (g).board[(g).next_moves[i].mine.x2][(g).next_moves[i].mine.y2] = our_king THEN
---			RAISE DEBUG '[%] => TRUE',procname;
 			RETURN true;
 		END IF;
 	END LOOP;
---	RAISE DEBUG '[%] => FALSE',procname;
 	RETURN false;
 END;
 $BODY$;
@@ -228,35 +205,17 @@ CREATE FUNCTION chesspiece_moves(
 ) RETURNS SETOF gamemove
 LANGUAGE plpgsql AS $BODY$
 DECLARE
-	procname text := 'cpm';
 	s chess_square := g.board[x][y];
 	m gamemove;
 	dz d_chess_square;
 	dx int;
 	dy int;
 	v_turn int;
---	side boolean;
---	boardside boolean[] := array_fill(NULL::boolean,ARRAY[8,8]);
 BEGIN
 	dz.x1 := x;
 	dz.y1 := y;
---	RAISE DEBUG '[%] dz.x1,dz.y1 = %,% while x,y = %,%',procname,dz.x1,dz.y1,x,y;
-	-- (1) compiling boardside[]
---?	v_turn := COALESCE(array_upper((g).moves,1),0);
---?	IF v_turn % 2 = 0 THEN
---?		side := true;
---?	ELSE
---?		side := false;
---?	END IF;
---	RAISE DEBUG '[%] v_turn = % ; side = %',procname,v_turn,side;
---?		FOR x IN 1 .. 8 LOOP
---?		FOR y IN 1 .. 8 LOOP
---?			boardside[x][y] := side_of_chess_square(g.board[x][y]);
---?		END LOOP;
---?		END LOOP;
-	-- (2) scanning all the pieces
+	-- (1) scanning all the pieces
 	IF s = 'Black Queen' OR  s = 'White Queen' THEN
---		RAISE DEBUG '[%] Qq',procname;
 		FOR dx,dy IN VALUES (0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1) LOOP
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1;
@@ -273,7 +232,6 @@ BEGIN
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Rook' OR  s = 'White Rook' THEN
---		RAISE DEBUG '[%] Rr',procname;
 		FOR dx,dy IN VALUES (0,1),(1,0),(0,-1),(-1,0) LOOP
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1;
@@ -290,7 +248,6 @@ BEGIN
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Bishop' OR  s = 'White Bishop' THEN
---		RAISE DEBUG '[%] Bb',procname;
 		FOR dx,dy IN VALUES (1,1),(1,-1),(-1,-1),(-1,1) LOOP
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1;
@@ -307,7 +264,6 @@ BEGIN
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Knight' OR  s = 'White Knight' THEN
---		RAISE DEBUG '[%] Nn',procname;
 		FOR dx,dy IN VALUES (1,2),(1,-2),(-1,-2),(-1,2),(2,1),(2,-1),(-2,-1),(-2,1) LOOP
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1;
@@ -324,7 +280,6 @@ BEGIN
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black King' OR  s = 'White King' THEN
---		RAISE DEBUG '[%] Kk',procname;
 		FOR dx,dy IN VALUES (0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1) LOOP
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1;
@@ -341,7 +296,6 @@ BEGIN
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Pawn' THEN
---		RAISE DEBUG '[%] P',procname;
 		-- moving forward by 1
 		IF boardside[x][y-1] IS NULL THEN
 			dz.x2 := dz.x1;
@@ -349,7 +303,6 @@ BEGIN
 			m.dscore := CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
---			RAISE DEBUG E'[%] cm1 (%,%) -> (%,%)\t[score %]',procname,dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- moving forward by 2
 		IF y = 7 AND boardside[x][y-1] IS NULL 
@@ -359,38 +312,28 @@ BEGIN
 			m.dscore := 0;
 			m.mine := dz;
 			RETURN NEXT m;
---			RAISE DEBUG E'[%] cm2 (%,%) -> (%,%)\t[score %]',procname,dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- capturing left
 		IF x > 1 AND boardside[x-1][y-1] = NOT side THEN
 			dz.x2 := dz.x1 - 1;
 			dz.y2 := dz.y1 - 1;
---			RAISE DEBUG '[%] % @ (%,%) captures % @ (%,%) on the left',procname,
---				(g).board[x][y],x,y,
---				(g).board[dz.x2][dz.y2],dz.x2,dz.y2;
 			m.dscore := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
 				+ CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
---			RAISE DEBUG E'[%] cml (%,%) -< (%,%)\t[score %]',procname,dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- capturing right
 		IF x < 8 AND boardside[x+1][y-1] = NOT side THEN
 			dz.x2 := dz.x1 + 1;
 			dz.y2 := dz.y1 - 1;
---			RAISE DEBUG '[%] % @ (%,%) captures % @ (%,%) on the right',procname,
---				(g).board[x][y],x,y,
---				(g).board[dz.x2][dz.y2],dz.x2,dz.y2;
 			m.dscore := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
 				+ CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
---			RAISE DEBUG E'[%] cmr (%,%) -< (%,%)\t[score %]',procname,dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 	ELSIF s = 'White Pawn' THEN
-		RAISE DEBUG '[%] p',procname;
 		-- moving forward by 1
 		IF boardside[x][y+1] IS NULL THEN
 			dz.x2 := dz.x1;
@@ -398,7 +341,6 @@ BEGIN
 			m.dscore := CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
---			RAISE DEBUG E'[%] cm3 (%,%) -> (%,%)\t[score %]',procname,dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- moving forward by 2
 		IF y = 2 AND boardside[x][y+1] IS NULL 
@@ -408,35 +350,26 @@ BEGIN
 			m.dscore := 0;
 			m.mine := dz;
 			RETURN NEXT m;
---			RAISE DEBUG E'[%] cm4 (%,%) -> (%,%)\t[score %]',procname,dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- capturing left
 		IF x > 1 AND boardside[x-1][y+1] = NOT side THEN
 			dz.x2 := dz.x1 - 1;
 			dz.y2 := dz.y1 + 1;
---			RAISE DEBUG '[%] % @ (%,%) captures % @ (%,%) on the left',procname,
---				(g).board[x][y],x,y,
---				(g).board[dz.x2][dz.y2],dz.x2,dz.y2;
 			m.dscore := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
 				+ CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
---			RAISE DEBUG E'[%] cml (%,%) -< (%,%)\t[score %]',procname,dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 		-- capturing right
 		IF x < 8 AND boardside[x+1][y+1] = NOT side THEN
 			dz.x2 := dz.x1 + 1;
 			dz.y2 := dz.y1 + 1;
---			RAISE DEBUG '[%] % @ (%,%) captures % @ (%,%) on the right',procname,
---				(g).board[x][y],x,y,
---				(g).board[dz.x2][dz.y2],dz.x2,dz.y2;
 			m.dscore := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
 				+ CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
---			RAISE DEBUG E'[%] cmr (%,%) -< (%,%)\t[score %]',procname,dz.x1,dz.y1,dz.x2,dz.y2,m.dscore;
 		END IF;
 	ELSE
 		RAISE EXCEPTION 'unsupported chess_square %',s;
@@ -450,52 +383,26 @@ CREATE FUNCTION prevalid_moves (
 ) RETURNS SETOF gamemove
 LANGUAGE plpgsql AS $BODY$
 -- This function produces the set of prevalid moves starting from
--- configuration v_g, assuming that side "side" is about to move.
+-- configuration v_g, assuming that side "side" is due to move next.
 DECLARE
-	procname text := 'pvm';
 	x chessint;
 	y chessint;
---	dx int;
---	dy int;
---	z int;
---	m gamemove;
---	n int;
 	boardside boolean[] := array_fill(NULL::boolean,ARRAY[8,8]);
---	v_turn int;
---	t0     timestamp;
---	t1     timestamp;
 BEGIN
---	t1 := clock_timestamp();
---	t0 := t1;
---	z := COALESCE(array_upper((v_g).moves,1),0);
---	IF z < 3 THEN
---		RAISE DEBUG '[%] BEGIN #%',procname,z;
---	END IF;
---	RAISE DEBUG '[%] (1) compiling boardside[] dt = %',procname,
---		clock_timestamp() - t1;
---	t1 := clock_timestamp();
 	FOR x IN 1 .. 8 LOOP
 	FOR y IN 1 .. 8 LOOP
 		boardside[x][y] := side_of_chess_square(v_g.board[x][y]);
 	END LOOP;
 	END LOOP;
---	RAISE DEBUG '[%] (2) scanning all the pieces dt = %',procname,
---		clock_timestamp() - t1;
---	t1 := clock_timestamp();
 	FOR x IN 1 .. 8 LOOP
 	FOR y IN 1 .. 8 LOOP
 		IF boardside[x][y] = side THEN
---			RAISE DEBUG '[%] considering (%,%) = %',procname
---				,x,y,(v_g).board[x][y];
 			RETURN QUERY
 				SELECT *
 				FROM chesspiece_moves(v_g,x,y,side,boardside);
 		END IF;
 	END LOOP;
 	END LOOP;
---	IF z < 3 THEN
---		RAISE DEBUG '[%] END dt = %, dt0 = %',procname,clock_timestamp() - t1,clock_timestamp() - t0 ;
---	END IF;
 END;
 $BODY$;
 
@@ -509,56 +416,36 @@ LANGUAGE plpgsql AS $BODY$
 -- "answers", and finally (c) using the information in (b) to select
 -- only those moves that do not leave the King under attack.
 DECLARE
-	procname text := 'vm';
 	side	boolean;
 	rec	record;
 	g1	gamestate;
 	m1	gamemove;
 BEGIN
-	-- (*) Whose side is playing now?
+	-- (*) Whose side is due to move?
 	IF COALESCE(array_upper((v_g).moves,1),0) % 2 = 0 THEN
 		side := true;
 	ELSE
 		side := false;
 	END IF;
-	-- FIXME: the list of prevalid moves should already be stored
-	-- in v_g.next_moves, as they have been already computed to
-	-- ensure that v_g was a legitimate status. However we have to
-	-- allow for the case when they aren't there, which can happen
-	-- at the very start of the game, i.e. when v_g has not been
-	-- obtained by applying a move to a previous
-	-- state. Alternatively we could have a separate function
-	-- "compute_prevalid_moves" to be invoked from within
-	-- starting_gamestate(), and skip this check, which on second
-	-- thought seems like a better strategy.
-	-- (a)
+	-- (*) Compute next_moves in case they are missing
 	IF v_g.next_moves IS NULL THEN
-		RAISE DEBUG '[%] (1) computing next_moves',procname;
 		SELECT array_agg(m.*)
 			INTO v_g.next_moves
 			FROM prevalid_moves(v_g,side) m;
 	END IF;
-	-- (b)
-	RAISE DEBUG '[%] (2) validating the % next_moves',procname,array_upper((v_g).next_moves,1);
+	-- (*) Filter next_moves
 	FOR i IN 1 .. array_upper((v_g).next_moves,1) LOOP
 		m1 := (v_g).next_moves[i];
 		g1 := apply_move(v_g,m1);
 		SELECT array_agg(m.*)
 			INTO g1.next_moves
 			FROM prevalid_moves(g1,NOT side) m;
-		IF is_king_under_attack(g1,side) THEN
-			RAISE DEBUG '[%] discarding move #% = % (% answers) since it leaves the King under attack',procname,
-				i,m1,array_upper(g1.next_moves,1);
-		ELSE
-			RAISE DEBUG '[%] validating move #% = % (% answers)',procname,
-				i,m1,array_upper(g1.next_moves,1);
+		-- FIXME: g1.next_moves are computed and then thrown
+		-- away. Maybe we can optimise by recycling them...
+		IF NOT is_king_under_attack(g1,side) THEN
 			RETURN NEXT m1;
 		END IF;
 	END LOOP;
---	RETURN QUERY
---		SELECT m1.*
---		FROM prevalid_moves(v_g,side) m1
---		WHERE NOT is_king_under_attack(apply_move(v_g,m1.*));
 END;
 $BODY$;
 
@@ -569,15 +456,9 @@ CREATE FUNCTION apply_move(
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
-	procname text := 'am';
 	this_side boolean;
 BEGIN
 	this_side := side_of_chess_square(v_g.board[(v_m).mine.x1][(v_m).mine.y1]);
-	RAISE DEBUG '[%] BEGIN %',procname,clock_timestamp();
-	RAISE DEBUG '[%] #% % : % (%,%) -> (%,%)',procname,
-		COALESCE(array_upper((v_g).moves,1),0),
-		v_g.board[(v_m).mine.x1][(v_m).mine.y1],
-		(v_m).dscore,(v_m).mine.x1,(v_m).mine.y1,(v_m).mine.x2,(v_m).mine.y2;
 	-- (1) apply the move
 	v_g.board[(v_m).mine.x2][(v_m).mine.y2] := (v_g).board[(v_m).mine.x1][(v_m).mine.y1];
 	-- (2) promote Pawns to Queens
@@ -587,22 +468,10 @@ BEGIN
 	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'White Pawn' AND (v_m).mine.y2 = 8 THEN
 		v_g.board[(v_m).mine.x2][(v_m).mine.y2] := 'White Queen';
 	END IF;
---?	-- (3) refresh the under_attack grid, for the convenience of
---?	-- the next player
---?	FOR x IN 1 .. 8 LOOP
---?	FOR y IN 1 .. 8 LOOP
---?		IF side_of_chess_square(v_g.board[x][y]) = this_side THEN
---?			RAISE DEBUG '[%] % @ (%,%) is now attacking',
---?				v_g.board[x][y],x,y;
---?			
---?		END IF;
---?	END LOOP;
---?	END LOOP;
-	-- (4) empty the old position
+	-- (3) vacate the starting position
 	v_g.board[(v_m).mine.x1][(v_m).mine.y1] := 'empty';
-	-- (5) remember the move
+	-- (4) remember the move
 	v_g.moves := v_g.moves || v_m;
-	RAISE DEBUG '[%] => %',procname,display(v_g);
 	RETURN v_g;
 END;
 $BODY$;
@@ -659,11 +528,9 @@ CREATE FUNCTION ui_parse_user_move (
 ) RETURNS boolean
 LANGUAGE plpgsql AS $BODY$
 DECLARE
-	procname	text := 'upum';
 	a		text[];
 	m		gamemove;
 BEGIN
-	RAISE NOTICE '[%] (1) reset available moves',procname;
 	a := regexp_matches(x,'^([a-h])([1-8])([PRBNQK])([a-h])([1-8])$');
 	IF a IS NULL THEN
 		RAISE EXCEPTION 'syntax error in move "%"',x;
