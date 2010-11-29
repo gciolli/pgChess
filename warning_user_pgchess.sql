@@ -1,7 +1,7 @@
 --SET work_mem = 64;
 --SET temp_buffers = 100;
 SET synchronous_commit = off;
-SET client_min_messages = NOTICE;
+SET client_min_messages = WARNING;
 
 \i libpgchess.sql
 
@@ -20,6 +20,6 @@ SET client_min_messages = NOTICE;
 SELECT ui_reset();
 
 \o varfile1.sql
-SELECT another_move(1,1);
+SELECT another_move(0,1);
 \o
 \i varfile1.sql

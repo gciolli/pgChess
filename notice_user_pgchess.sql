@@ -20,6 +20,6 @@ SET client_min_messages = NOTICE;
 SELECT ui_reset();
 
 \o varfile1.sql
-SELECT another_move(1,1);
+SELECT another_move(0,1);
 \o
 \i varfile1.sql

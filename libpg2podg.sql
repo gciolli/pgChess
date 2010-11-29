@@ -220,7 +220,7 @@ SELECT ui_display();
 \o varfile$code$
 	|| CAST($1 AS text)
 	|| $code$.sql
-SELECT CASE WHEN chess_parse_user_move(:'my_next_move')
+SELECT CASE WHEN ui_parse_user_move(:'my_next_move')
 	THEN another_move($code$
 	|| CAST(3 - $1 AS text)
 	|| $code$,$code$

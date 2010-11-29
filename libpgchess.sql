@@ -654,6 +654,44 @@ BEGIN
 END;
 $BODY$;
 
+CREATE FUNCTION ui_parse_user_move (
+	x text
+) RETURNS boolean
+LANGUAGE plpgsql AS $BODY$
+DECLARE
+	procname	text := 'upum';
+	a		text[];
+	m		gamemove;
+BEGIN
+	RAISE NOTICE '[%] (1) reset available moves',procname;
+	a := regexp_matches(x,'^([a-h])([1-8])([PRBNQK])([a-h])([1-8])$');
+	IF a IS NULL THEN
+		RAISE EXCEPTION 'syntax error in move "%"',x;
+	END IF;
+	m.mine := ROW(CAST(translate(a[1],'abcdefgh','12345678') AS int)
+		  ,   a[2]
+		  ,   CAST(translate(a[4],'abcdefgh','12345678') AS int)
+		  ,   a[5]);
+	TRUNCATE my_moves;
+	INSERT INTO my_moves(current_game,this_move,move_level,score)
+		SELECT	a.game
+		,	m
+		,	0
+		,	(a.game).score
+		FROM (
+		SELECT game
+		FROM my_games) a;
+	TRUNCATE my_games;
+	INSERT INTO my_games(game)
+	SELECT apply_move(current_game, this_move)
+	FROM (SELECT * FROM my_moves
+	WHERE parent IS NULL
+	ORDER BY score DESC
+	LIMIT 1) x;
+	RETURN found;
+END;
+$BODY$;
+
 ------------------------------------------------------------
 -- (*) generic pg2podg library
 ------------------------------------------------------------
