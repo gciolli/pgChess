@@ -16,3 +16,7 @@ h2. To Do
 * check that the user move is allowed before applying it
 
 * make sure nobody captures a King
+
+* make sure the player understand the importance of checkmate
+
+* incentive the promotion of Pawns
