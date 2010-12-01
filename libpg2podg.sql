@@ -135,7 +135,11 @@ BEGIN
 	ORDER BY 2 DESC
 	LIMIT 1;
 	IF NOT FOUND THEN
-		RAISE NOTICE '[%] Stale';
+		RAISE NOTICE 'Stale: no available moves';
+		-- TODO: here goes CheckMate / StaleMate? Or maybe it
+		-- goes somewhere else (otherwise it doesn't detect
+		-- human defeat because humans do not invoke this
+		-- function)
 		RETURN false;
 	END IF;
 	-- (4) clean up my_moves
