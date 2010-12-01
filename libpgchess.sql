@@ -444,11 +444,13 @@ BEGIN
 		SELECT array_agg(m.*)
 			INTO g1.next_moves
 			FROM prevalid_moves(g1,NOT side) m;
-		-- FIXME: g1.next_moves are computed and then thrown
-		-- away. Maybe we can optimise by recycling them...
+		-- return the moves m1 whose answers do not "capture"
+		-- the King
 		IF NOT is_king_under_attack(g1,side) THEN
 			RETURN NEXT m1;
 		END IF;
+		-- FIXME: g1.next_moves are computed and then thrown
+		-- away. Maybe we can optimise by recycling them...
 	END LOOP;
 END;
 $BODY$;
