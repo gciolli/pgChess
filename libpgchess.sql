@@ -1,3 +1,8 @@
+--SET work_mem = 64;
+--SET temp_buffers = 100;
+SET synchronous_commit = off;
+SET client_min_messages = WARNING;
+
 DROP SCHEMA IF EXISTS chess CASCADE;
 CREATE SCHEMA chess;
 SET search_path = chess, public;

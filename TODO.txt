@@ -37,3 +37,7 @@
 
 * rewrite some routines using faster algorithms (and maybe a different
   language?)
+
+* check that the user move is allowed
+
+* make sure nobody captures a King
