@@ -136,7 +136,7 @@ ELSE	0
 END $BODY$;
 
 CREATE DOMAIN chessint AS int
---	CHECK (VALUE BETWEEN 1 AND 8)
+	CHECK (VALUE BETWEEN 1 AND 8)
 ;
 
 CREATE TYPE d_chess_square AS (
@@ -304,7 +304,7 @@ BEGIN
 		IF boardside[x][y-1] IS NULL THEN
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1 - 1;
-			m.dscore := CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
+			m.dscore := 0.1 + CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -313,7 +313,7 @@ BEGIN
 			 AND boardside[x][y-2] IS NULL THEN
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1 - 2;
-			m.dscore := 0;
+			m.dscore := 0.2 ;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -323,7 +323,7 @@ BEGIN
 			dz.y2 := dz.y1 - 1;
 			m.dscore := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
-				+ CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
+				+ 0.1 + CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -333,7 +333,7 @@ BEGIN
 			dz.y2 := dz.y1 - 1;
 			m.dscore := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
-				+ CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
+				+ 0.1 + CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -342,7 +342,7 @@ BEGIN
 		IF boardside[x][y+1] IS NULL THEN
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1 + 1;
-			m.dscore := CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
+			m.dscore := 0.1 + CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -351,7 +351,7 @@ BEGIN
 			 AND boardside[x][y+2] IS NULL THEN
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1 + 2;
-			m.dscore := 0;
+			m.dscore := 0.2;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -361,7 +361,7 @@ BEGIN
 			dz.y2 := dz.y1 + 1;
 			m.dscore := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
-				+ CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
+				+ 0.1 + CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -371,7 +371,7 @@ BEGIN
 			dz.y2 := dz.y1 + 1;
 			m.dscore := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
-				+ CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
+				+ 0.1 + CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -464,14 +464,25 @@ AS $BODY$
 DECLARE
 	this_side boolean;
 BEGIN
-	this_side := side_of_chess_square(v_g.board[(v_m).mine.x1][(v_m).mine.y1]);
+	this_side := 
+		side_of_chess_square(v_g.board[(v_m).mine.x1][(v_m).mine.y1]);
+	-- (0) can't capture the King!
+	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'White King'
+	OR v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'Black King' THEN
+		RAISE EXCEPTION 'Tried to capture % @ %,%',
+			v_g.board[(v_m).mine.x2][(v_m).mine.y2],
+			(v_m).mine.x2,(v_m).mine.x2;
+	END IF;
 	-- (1) apply the move
-	v_g.board[(v_m).mine.x2][(v_m).mine.y2] := (v_g).board[(v_m).mine.x1][(v_m).mine.y1];
+	v_g.board[(v_m).mine.x2][(v_m).mine.y2] := 
+		(v_g).board[(v_m).mine.x1][(v_m).mine.y1];
 	-- (2) promote Pawns to Queens
-	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'Black Pawn' AND (v_m).mine.y2 = 1 THEN
+	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'Black Pawn'
+	AND (v_m).mine.y2 = 1 THEN
 		v_g.board[(v_m).mine.x2][(v_m).mine.y2] := 'Black Queen';
 	END IF;
-	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'White Pawn' AND (v_m).mine.y2 = 8 THEN
+	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'White Pawn'
+	AND (v_m).mine.y2 = 8 THEN
 		v_g.board[(v_m).mine.x2][(v_m).mine.y2] := 'White Queen';
 	END IF;
 	-- (3) vacate the starting position

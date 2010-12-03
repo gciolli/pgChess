@@ -128,7 +128,7 @@ BEGIN
 		WHERE m.id = r.parent
 	)
 	SELECT	last_move
-	,	v_coeff * min(score + 0.01*random())
+	,	v_coeff * min(score + 0.01 * random())
 	INTO v_id, v_x
 	FROM r
 	GROUP BY last_move
@@ -182,9 +182,11 @@ $code$ ELSE $code$
 -- if $1 > 0
 ----------------------------------------
 SELECT ui_display();
-\qecho BEGIN waiting...
+--\qecho BEGIN waiting...
+\o /dev/null
 SELECT pg_sleep(1);
-\qecho END waiting...
+\o
+--\qecho END waiting...
 \o varfile$code$
 	|| CAST($1 AS text)
 	|| $code$.sql
