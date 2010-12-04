@@ -1,4 +1,4 @@
-CREATE TEMPORARY TABLE my_games (
+CREATE TEMPORARY TABLE my_states (
 	t timestamp DEFAULT current_timestamp
 ,	id SERIAL PRIMARY KEY
 ,	game gamestate NOT NULL
@@ -17,17 +17,17 @@ CREATE TEMPORARY VIEW view_my_moves AS
 SELECT display(current_game),id,parent,move_level,this_move,score FROM my_moves
 ORDER BY score DESC;
 
-CREATE TEMPORARY VIEW view_my_games AS
-SELECT display(game),t,id,(game).moves FROM my_games
+CREATE TEMPORARY VIEW view_my_states AS
+SELECT display(game),t,id,(game).moves FROM my_states
 ORDER BY array_upper((game).moves,1) DESC NULLS LAST;
 
 CREATE FUNCTION ui_reset()
 RETURNS VOID
 LANGUAGE plpgsql AS $BODY$
 BEGIN
-	TRUNCATE my_games;
+	TRUNCATE my_states;
 	TRUNCATE my_moves;
-	INSERT INTO my_games(game)
+	INSERT INTO my_states(game)
 	SELECT CAST (ROW(a.*) AS gamestate) FROM starting_gamestate() a;
 END;
 $BODY$;
@@ -37,10 +37,10 @@ RETURNS SETOF text
 LANGUAGE plpgsql AS $BODY$
 BEGIN
 	RETURN QUERY SELECT count(1) || ' my_moves' FROM my_moves;
-	RETURN QUERY SELECT count(1) || ' my_games' FROM my_games;
+	RETURN QUERY SELECT count(1) || ' my_states' FROM my_states;
 	RETURN QUERY
 		SELECT display(game)
-		FROM my_games
+		FROM my_states
 		ORDER BY t DESC
 		LIMIT 1;
 END;
@@ -52,8 +52,8 @@ LANGUAGE plpgsql AS $BODY$
 DECLARE
 	v_game gamestate;
 BEGIN
-	TRUNCATE my_games;
-	INSERT INTO my_games(game)
+	TRUNCATE my_states;
+	INSERT INTO my_states(game)
 	SELECT apply_move(current_game, this_move)
 	FROM (SELECT * FROM my_moves
 	WHERE parent IS NULL
@@ -80,7 +80,7 @@ BEGIN
 	t1 := clock_timestamp();
 	v_coeff := CASE WHEN COALESCE(array_upper((v_g).moves,1),0) % 2 = 0 THEN 1 ELSE -1 END;
 	-- (0) is the game settled?
-	SELECT (game).score INTO STRICT v_x FROM my_games;
+	SELECT (game).score INTO STRICT v_x FROM my_states;
 	IF v_x = 'Infinity' THEN
 		RAISE EXCEPTION 'The game is settled: true wins';
 	ELSIF v_x = '-Infinity' THEN
@@ -93,10 +93,10 @@ BEGIN
 		SELECT	a.game
 		,	a.move
 		,	0
-		,	(a.game).score + (a.move).dscore
+		,	(a.game).score + (a.move).d_score
 		FROM (
 		SELECT game, valid_moves(game) as move
-		FROM my_games) a;
+		FROM my_states) a;
 	-- (3) compute subsequent moves, up to level v_level
 	FOR v_l IN 1 .. v_level LOOP
 		FOR v_m IN
@@ -109,7 +109,7 @@ BEGIN
 				,	a.parent
 				,	a.current_game
 				,	a.this_move
-				,	(a).current_game.score + (a.this_move).dscore
+				,	(a).current_game.score + (a.this_move).d_score
 				FROM (
 					SELECT	v_l AS move_level
 					,	v_m.id AS parent

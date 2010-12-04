@@ -147,15 +147,16 @@ CREATE TYPE d_chess_square AS (
 );
 
 CREATE TYPE gamemove AS (
-	dscore	real
+	d_score	real
 ,	mine	d_chess_square
 );
 
 CREATE TYPE gamestate AS (
-	score		real
-,	moves		gamemove[]
-,	board		chess_square[]
-,	next_moves	gamemove[]
+	score	real
+,	moves	gamemove[]
+,	board	chess_square[]
+,	next	gamemove[]
+,	side_next boolean
 );
 
 ------------------------------------------------------------
@@ -179,6 +180,7 @@ BEGIN
 {White Rook  ,White Pawn,empty,empty,empty,empty,Black Pawn,Black Rook  }
 		}' AS chess_square[]);
 	v_g.moves := CAST(ARRAY[] AS gamemove[]);
+	v_g.side_next := true;
 	RETURN v_g;
 END
 $BODY$;
@@ -191,8 +193,8 @@ DECLARE
 	our_king	chess_square := CASE WHEN our_side = true THEN 'White King' ELSE 'Black King' END;
 	i		int;
 BEGIN
-	FOR i IN 1 .. array_upper(g.next_moves,1) LOOP
-		IF (g).board[(g).next_moves[i].mine.x2][(g).next_moves[i].mine.y2] = our_king THEN
+	FOR i IN 1 .. array_upper(g.next,1) LOOP
+		IF (g).board[(g).next[i].mine.x2][(g).next[i].mine.y2] = our_king THEN
 			RETURN true;
 		END IF;
 	END LOOP;
@@ -229,7 +231,7 @@ BEGIN
 				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
 				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
 				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
-				m.dscore := score_of_chess_square((g).board[dz.x2][dz.y2]);
+				m.d_score := score_of_chess_square((g).board[dz.x2][dz.y2]);
 				m.mine := dz;
 				RETURN NEXT m;
 				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
@@ -245,7 +247,7 @@ BEGIN
 				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
 				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
 				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
-				m.dscore := score_of_chess_square((g).board[dz.x2][dz.y2]);
+				m.d_score := score_of_chess_square((g).board[dz.x2][dz.y2]);
 				m.mine := dz;
 				RETURN NEXT m;
 				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
@@ -261,7 +263,7 @@ BEGIN
 				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
 				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
 				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
-				m.dscore := score_of_chess_square((g).board[dz.x2][dz.y2]);
+				m.d_score := score_of_chess_square((g).board[dz.x2][dz.y2]);
 				m.mine := dz;
 				RETURN NEXT m;
 				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
@@ -277,7 +279,7 @@ BEGIN
 				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
 				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
 				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
-				m.dscore := score_of_chess_square((g).board[dz.x2][dz.y2]);
+				m.d_score := score_of_chess_square((g).board[dz.x2][dz.y2]);
 				m.mine := dz;
 				RETURN NEXT m;
 				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
@@ -293,7 +295,7 @@ BEGIN
 				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
 				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
 				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
-				m.dscore := score_of_chess_square((g).board[dz.x2][dz.y2]);
+				m.d_score := score_of_chess_square((g).board[dz.x2][dz.y2]);
 				m.mine := dz;
 				RETURN NEXT m;
 				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
@@ -304,7 +306,7 @@ BEGIN
 		IF boardside[x][y-1] IS NULL THEN
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1 - 1;
-			m.dscore := 0.1 + CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
+			m.d_score := 0.1 + CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -313,7 +315,7 @@ BEGIN
 			 AND boardside[x][y-2] IS NULL THEN
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1 - 2;
-			m.dscore := 0.2 ;
+			m.d_score := 0.2 ;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -321,7 +323,7 @@ BEGIN
 		IF x > 1 AND boardside[x-1][y-1] = NOT side THEN
 			dz.x2 := dz.x1 - 1;
 			dz.y2 := dz.y1 - 1;
-			m.dscore := 
+			m.d_score := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
 				+ 0.1 + CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
 			m.mine := dz;
@@ -331,7 +333,7 @@ BEGIN
 		IF x < 8 AND boardside[x+1][y-1] = NOT side THEN
 			dz.x2 := dz.x1 + 1;
 			dz.y2 := dz.y1 - 1;
-			m.dscore := 
+			m.d_score := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
 				+ 0.1 + CASE WHEN dz.y2 = 1 THEN 9 ELSE 0 END;
 			m.mine := dz;
@@ -342,7 +344,7 @@ BEGIN
 		IF boardside[x][y+1] IS NULL THEN
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1 + 1;
-			m.dscore := 0.1 + CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
+			m.d_score := 0.1 + CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -351,7 +353,7 @@ BEGIN
 			 AND boardside[x][y+2] IS NULL THEN
 			dz.x2 := dz.x1;
 			dz.y2 := dz.y1 + 2;
-			m.dscore := 0.2;
+			m.d_score := 0.2;
 			m.mine := dz;
 			RETURN NEXT m;
 		END IF;
@@ -359,7 +361,7 @@ BEGIN
 		IF x > 1 AND boardside[x-1][y+1] = NOT side THEN
 			dz.x2 := dz.x1 - 1;
 			dz.y2 := dz.y1 + 1;
-			m.dscore := 
+			m.d_score := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
 				+ 0.1 + CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
 			m.mine := dz;
@@ -369,7 +371,7 @@ BEGIN
 		IF x < 8 AND boardside[x+1][y+1] = NOT side THEN
 			dz.x2 := dz.x1 + 1;
 			dz.y2 := dz.y1 + 1;
-			m.dscore := 
+			m.d_score := 
 				score_of_chess_square((g).board[dz.x2][dz.y2])
 				+ 0.1 + CASE WHEN dz.y2 = 8 THEN 9 ELSE 0 END;
 			m.mine := dz;
@@ -431,25 +433,28 @@ BEGIN
 	ELSE
 		side := false;
 	END IF;
+	IF side != g1.side_next THEN
+		RAISE EXCEPTION 'side = % != side_next = %', side, g1.side_next;
+	END IF;
 	-- (*) Compute next_moves in case they are missing
-	IF v_g.next_moves IS NULL THEN
+	IF v_g.next IS NULL THEN
 		SELECT array_agg(m.*)
-			INTO v_g.next_moves
+			INTO v_g.next
 			FROM prevalid_moves(v_g,side) m;
 	END IF;
 	-- (*) Filter next_moves
-	FOR i IN 1 .. array_upper((v_g).next_moves,1) LOOP
-		m1 := (v_g).next_moves[i];
+	FOR i IN 1 .. array_upper((v_g).next,1) LOOP
+		m1 := (v_g).next[i];
 		g1 := apply_move(v_g,m1);
 		SELECT array_agg(m.*)
-			INTO g1.next_moves
+			INTO g1.next
 			FROM prevalid_moves(g1,NOT side) m;
 		-- return the moves m1 whose answers do not "capture"
 		-- the King
 		IF NOT is_king_under_attack(g1,side) THEN
 			RETURN NEXT m1;
 		END IF;
-		-- FIXME: g1.next_moves are computed and then thrown
+		-- FIXME: g1.next are computed and then thrown
 		-- away. Maybe we can optimise by recycling them...
 	END LOOP;
 END;
@@ -489,6 +494,8 @@ BEGIN
 	v_g.board[(v_m).mine.x1][(v_m).mine.y1] := 'empty';
 	-- (4) remember the move
 	v_g.moves := v_g.moves || v_m;
+	-- (5) now the other side plays
+	v_g.side_next := NOT v_g.side_next;
 	RETURN v_g;
 END;
 $BODY$;
@@ -564,9 +571,9 @@ BEGIN
 		,	(a.game).score
 		FROM (
 		SELECT game
-		FROM my_games) a;
-	TRUNCATE my_games;
-	INSERT INTO my_games(game)
+		FROM my_states) a;
+	TRUNCATE my_states;
+	INSERT INTO my_states(game)
 	SELECT apply_move(current_game, this_move)
 	FROM (SELECT * FROM my_moves
 	WHERE parent IS NULL
