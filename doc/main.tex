@@ -1,4 +1,7 @@
-\section{Chess rules}
+\theoremstyle{remark}
+\newtheorem{rem}{Remark}
+
+\section{Game rules}
 
 \begin{enumerate}
 \item There are the following pieces:
@@ -11,7 +14,7 @@
   \item King \king
   \end{itemize}
 \item The starting position is as in Figure~\ref{fig:reset}.
-  \begin{figure}
+  \begin{figure}[!ht]
     \centering
     \newgame\showboard
     \caption{The starting position}
@@ -27,6 +30,66 @@
   \item \emph{Resign}
   \end{enumerate}
 \end{enumerate}
+
+\section{Implementation}
+
+\begin{itemize}
+\item Custom type \verb+gamemove+, to represent a move. Includes:
+  \begin{itemize}
+  \item \verb+dscore :real+, as in ``difference in score''
+  \item \verb+mine :d_chess_square+, specifying $(x_1,y_1)\mapsto(x_2,y_2)$.
+  \end{itemize}
+
+\item Custom type \verb+gamestate+, to represent the state of a
+  game. Includes:
+  \begin{itemize}
+  \item \verb+score :real+
+  \item \verb+moves :gamemove[]+, previous moves
+  \item \verb+next :gamemove[]+, next possible moves
+  \end{itemize}
+
+  \begin{rem} Next possible moves are cached for efficiency, because
+    the same set of moves is needed more than once:
+    \begin{itemize}
+    \item a move $M$ is valid only if the moves immediately following
+      $M$ cannot ``capture the King''
+    \item after having applied $M$, the computer player needs to
+      consider all the moves following $M$
+    \end{itemize}
+  \end{rem}
+
+\item \emph{prevalid} move: move allowed by the movement rules of the
+  piece
+
+\item \emph{valid} move: prevalid move $M$\quad +\quad the moves
+  immediately following $M$ cannot ``capture the King''
+
+\item Temporary table \verb+my_states+ represents a set of objects of
+  type \verb+gamestate+.
+
+\item Temporary table \verb+my_moves+ represents a set of objects of
+  type \verb+gamemove+.
+
+\item The side of the player is represented by a \verb+boolean+ (Black
+  and White respectively \verb+f+ and \verb+t+)
+
+\item Function \verb+prevalid_moves(gamestate,boolean)+ computes the
+  set of prevalid moves, starting from a given state, and assuming
+  that a given side is going to play next.
+  \begin{rem}
+    In a normal chess game the side who is playing next depends on the
+    length of the \verb+G.moves[]+ array (Black if odd, White if
+    even). We allow to specify it explicitely to reduce the frequency
+    of that computation, and also to allow non-standard games, such as
+    chess problems.
+  \end{rem}
+
+
+\section{Optimisation}
+
+
+
+\end{itemize}
 
 %%% Local Variables: 
 %%% mode: latex
