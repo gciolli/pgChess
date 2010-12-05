@@ -39,8 +39,8 @@ $BODY$;
 
 -- ASCII version, using "KQRBNPkqrbnp"
 CREATE FUNCTION to_char(
-	v_x chesspiececlass
-,	v_s boolean
+	piece_class	chesspiececlass
+,	piece_side	boolean
 ) RETURNS text LANGUAGE SQL
 AS $BODY$ SELECT CASE WHEN $2 THEN
 	CASE
@@ -66,8 +66,8 @@ END $BODY$;
 
 -- Unicode version, using "♔♕♖♗♘♙♚♛♜♝♞♟"
 CREATE OR REPLACE FUNCTION to_char(
-	v_x chesspiececlass
-,	v_s boolean
+	piece_class	chesspiececlass
+,	piece_side	boolean
 ) RETURNS text LANGUAGE SQL
 AS $BODY$ SELECT CASE WHEN $2 THEN
 	CASE
@@ -166,10 +166,10 @@ CREATE TYPE gamestate AS (
 CREATE FUNCTION starting_gamestate()
 RETURNS gamestate LANGUAGE plpgsql AS $BODY$
 DECLARE
-	v_g	gamestate;
+	g	gamestate;
 BEGIN
-	v_g.score := 0;
-	v_g.board := CAST('{
+	g.score := 0;
+	g.board := CAST('{
 {White Rook  ,White Pawn,empty,empty,empty,empty,Black Pawn,Black Rook  },
 {White Knight,White Pawn,empty,empty,empty,empty,Black Pawn,Black Knight},
 {White Bishop,White Pawn,empty,empty,empty,empty,Black Pawn,Black Bishop},
@@ -179,9 +179,9 @@ BEGIN
 {White Knight,White Pawn,empty,empty,empty,empty,Black Pawn,Black Knight},
 {White Rook  ,White Pawn,empty,empty,empty,empty,Black Pawn,Black Rook  }
 		}' AS chess_square[]);
-	v_g.moves := CAST(ARRAY[] AS gamemove[]);
-	v_g.side_next := true;
-	RETURN v_g;
+	g.moves := CAST(ARRAY[] AS gamemove[]);
+	g.side_next := true;
+	RETURN g;
 END
 $BODY$;
 
@@ -214,7 +214,7 @@ DECLARE
 	dz d_chess_square;
 	dx int;
 	dy int;
-	v_turn int;
+--FIXME delete	turn int;
 BEGIN
 	dz.x1 := x;
 	dz.y1 := y;
@@ -410,11 +410,11 @@ END;
 $BODY$;
 
 CREATE FUNCTION valid_moves (
-	v_g	gamestate
+	g	gamestate
 ) RETURNS SETOF gamemove
 LANGUAGE plpgsql AS $BODY$
 -- This function produces the set of valid moves starting from
--- configuration v_g. This is obtained by (a) taking all the prevalid
+-- configuration g. This is obtained by (a) taking all the prevalid
 -- moves, (b) endowing each prevalid move with the list of possible
 -- "answers", and finally (c) using the information in (b) to select
 -- only those moves that do not leave the King under attack.
@@ -424,15 +424,15 @@ DECLARE
 	m1	gamemove;
 BEGIN
 	-- (*) Compute next_moves in case they are missing
-	IF v_g.next IS NULL THEN
+	IF g.next IS NULL THEN
 		SELECT array_agg(m.*)
-			INTO v_g.next
-			FROM prevalid_moves(v_g) m;
+			INTO g.next
+			FROM prevalid_moves(g) m;
 	END IF;
 	-- (*) Filter next_moves
-	FOR i IN 1 .. array_upper((v_g).next,1) LOOP
-		m1 := (v_g).next[i];
-		g1 := apply_move(v_g,m1);
+	FOR i IN 1 .. array_upper((g).next,1) LOOP
+		m1 := (g).next[i];
+		g1 := apply_move(g,m1);
 		SELECT array_agg(m.*)
 			INTO g1.next
 			FROM prevalid_moves(g1) m;
@@ -448,44 +448,44 @@ END;
 $BODY$;
 
 CREATE FUNCTION apply_move(
-	v_g gamestate
-,	v_m gamemove
+	g gamestate
+,	m gamemove
 ) RETURNS gamestate
 LANGUAGE plpgsql
 AS $BODY$
 BEGIN
 	-- (0) can't capture the King!
-	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'White King'
-	OR v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'Black King' THEN
+	IF g.board[(m).mine.x2][(m).mine.y2] = 'White King'
+	OR g.board[(m).mine.x2][(m).mine.y2] = 'Black King' THEN
 		RAISE EXCEPTION 'Tried to capture % @ %,%',
-			v_g.board[(v_m).mine.x2][(v_m).mine.y2],
-			(v_m).mine.x2,(v_m).mine.y2;
+			g.board[(m).mine.x2][(m).mine.y2],
+			(m).mine.x2,(m).mine.y2;
 	END IF;
 	-- (1) apply the move
-	v_g.board[(v_m).mine.x2][(v_m).mine.y2] := 
-		(v_g).board[(v_m).mine.x1][(v_m).mine.y1];
+	g.board[(m).mine.x2][(m).mine.y2] := 
+		(g).board[(m).mine.x1][(m).mine.y1];
 	-- (2) promote Pawns to Queens
-	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'Black Pawn'
-	AND (v_m).mine.y2 = 1 THEN
-		v_g.board[(v_m).mine.x2][(v_m).mine.y2] := 'Black Queen';
+	IF g.board[(m).mine.x2][(m).mine.y2] = 'Black Pawn'
+	AND (m).mine.y2 = 1 THEN
+		g.board[(m).mine.x2][(m).mine.y2] := 'Black Queen';
 	END IF;
-	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'White Pawn'
-	AND (v_m).mine.y2 = 8 THEN
-		v_g.board[(v_m).mine.x2][(v_m).mine.y2] := 'White Queen';
+	IF g.board[(m).mine.x2][(m).mine.y2] = 'White Pawn'
+	AND (m).mine.y2 = 8 THEN
+		g.board[(m).mine.x2][(m).mine.y2] := 'White Queen';
 	END IF;
 	-- (3) vacate the starting position
-	v_g.board[(v_m).mine.x1][(v_m).mine.y1] := 'empty';
+	g.board[(m).mine.x1][(m).mine.y1] := 'empty';
 	-- (4) remember the move
-	v_g.moves := v_g.moves || v_m;
+	g.moves := g.moves || m;
 	-- (5) now the other side plays
-	v_g.side_next := NOT v_g.side_next;
-	RETURN v_g;
+	g.side_next := NOT g.side_next;
+	RETURN g;
 END;
 $BODY$;
 
 -- Unicode version, using "♔♕♖♗♘♙♚♛♜♝♞♟"
 CREATE OR REPLACE FUNCTION to_char(
-	v_x chess_square
+	chess_square
 ) RETURNS text LANGUAGE SQL
 AS $BODY$ SELECT CASE $1
 	WHEN 'White King' THEN '♔'
@@ -504,26 +504,26 @@ AS $BODY$ SELECT CASE $1
 END $BODY$;
 
 CREATE FUNCTION display (
-	v_g gamestate
+	g gamestate
 ) RETURNS text
 LANGUAGE plpgsql AS $BODY$
 DECLARE
 	x chessint;
 	y chessint;
 	t text DEFAULT ' ';
-	v_turn int;
+	turn int;
 BEGIN
-	v_turn := 1 + COALESCE(array_upper((v_g).moves,1),0);
-	IF v_turn % 2 = 1 THEN
+	turn := 1 + COALESCE(array_upper((g).moves,1),0);
+	IF turn % 2 = 1 THEN
 		t := t || 'White';
 	ELSE
 		t := t || 'Black';
 	END IF;
-	t := t || ' - move ' || v_turn || E' \n\n';
+	t := t || ' - move ' || turn || E' \n\n';
 	FOR y IN REVERSE 8 .. 1 LOOP
 		t := t || to_char(y,'9') || ' ';
 	FOR x IN 1 .. 8 LOOP
-		t := t || to_char(v_g.board[x][y]) ||
+		t := t || to_char(g.board[x][y]) ||
 			CASE WHEN x = 8 THEN E' \n' ELSE ' ' END;
 	END LOOP;
 	END LOOP;
