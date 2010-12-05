@@ -189,7 +189,7 @@ CREATE FUNCTION is_king_under_attack(
 	g		gamestate
 ) RETURNS boolean LANGUAGE plpgsql AS $BODY$
 DECLARE
-	our_king	chess_square := CASE WHEN g.side_next THEN 'Black King' ELSE ' King' END;
+	our_king	chess_square := CASE WHEN g.side_next THEN 'Black King' ELSE 'White King' END;
 	i		int;
 BEGIN
 	FOR i IN 1 .. array_upper(g.next,1) LOOP
@@ -510,22 +510,24 @@ LANGUAGE plpgsql AS $BODY$
 DECLARE
 	x chessint;
 	y chessint;
-	t text DEFAULT '	';
+	t text DEFAULT ' ';
 	v_turn int;
 BEGIN
-	v_turn := COALESCE(array_upper((v_g).moves,1),0);
-	IF v_turn % 2 = 0 THEN
+	v_turn := 1 + COALESCE(array_upper((v_g).moves,1),0);
+	IF v_turn % 2 = 1 THEN
 		t := t || 'White';
 	ELSE
 		t := t || 'Black';
 	END IF;
-	t := t || ' - move ' || v_turn || E' \n\n	';
+	t := t || ' - move ' || v_turn || E' \n\n';
 	FOR y IN REVERSE 8 .. 1 LOOP
+		t := t || to_char(y,'9') || ' ';
 	FOR x IN 1 .. 8 LOOP
 		t := t || to_char(v_g.board[x][y]) ||
-			CASE WHEN x = 8 THEN E' \n	' ELSE ' ' END;
+			CASE WHEN x = 8 THEN E' \n' ELSE ' ' END;
 	END LOOP;
 	END LOOP;
+	t := t || '   a b c d e f g h';
 	RETURN t;
 END;
 $BODY$;

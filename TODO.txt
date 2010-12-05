@@ -13,22 +13,36 @@ h2. Done
 
 h2. To Do
 
+h3. UI
+
 * check that the user move is allowed before applying it:
 ** does it comply with the movement rules?
 ** does it move the enemy piece instead of its own?
 ** does it leave own King under attack?
 
-* add support for castling
-
-* add support for en-passant
+h3. Optimisation
 
 * performance test with different hardware (memory, CPU, disks)
-
-* test how much compacting the status can improve speed
 
 * rewrite some routines using faster algorithms (and maybe a different
   language?)
 
+* test how beneficial it would be to compact the game status
+
+h3. AI
+
 * make sure the computer player understand the importance of check
 
 * make sure the computer player understand the importance of checkmate
+
+h3. Chess rules
+
+* implement castling
+
+* implement en-passant
+
+* implement stalemate
+
+* implement checkmate
+
+* implement draw by 3-fold repeat

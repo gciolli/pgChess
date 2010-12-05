@@ -163,7 +163,7 @@ CASE WHEN $1 = 0 THEN $code$
 -- if $1 = 0
 ----------------------------------------
 SELECT ui_display();
-\prompt 'Your next move? ' my_next_move
+\prompt 'Your move? ' my_next_move
 \o varfile$code$
 	|| CAST($1 AS text)
 	|| $code$.sql
