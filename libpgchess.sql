@@ -146,7 +146,7 @@ CREATE TYPE d_chess_square AS (
 ,	y2	chessint
 );
 
-CREATE TYPE prevalidmove AS (
+CREATE TYPE pregamemove AS (
 	d_score	real
 ,	mine	d_chess_square
 );
@@ -154,11 +154,11 @@ CREATE TYPE prevalidmove AS (
 CREATE TYPE gamemove AS (
 	d_score	real
 ,	mine	d_chess_square
-,	next	prevalidmove[]
+,	next	pregamemove[]
 );
 
-CREATE FUNCTION prevalidmove_as_gamemove (
-	p prevalidmove
+CREATE FUNCTION pregamemove_as_gamemove (
+	p pregamemove
 ) RETURNS gamemove
 LANGUAGE plpgsql
 AS $BODY$
@@ -172,18 +172,18 @@ BEGIN
 END;
 $BODY$;
 
-COMMENT ON TYPE prevalidmove IS 'Recursive types are not allowed, so
-we had to implement a separate type "prevalidmove", in order to endow
+COMMENT ON TYPE pregamemove IS 'Recursive types are not allowed, so
+we had to implement a separate type "pregamemove", in order to endow
 a gamemove with a list "next" of prevalid gamemoves. We embed the
-prevalidmove type as a gamemove where next is NULL via the function
-prevalidmove_as_gamemove. Its name is long but unambiguous, to reflect
+pregamemove type as a gamemove where next is NULL via the function
+pregamemove_as_gamemove. Its name is long but unambiguous, to reflect
 the author''s preference for strong typing practices.';
 
 CREATE TYPE gamestate AS (
 	score	real
 ,	moves	gamemove[]
 ,	board	chess_square[]
-,	next	prevalidmove[]
+,	next	pregamemove[]
 ,	side_next boolean
 );
 
@@ -242,11 +242,11 @@ CREATE FUNCTION chesspiece_moves(
 ,	x		int
 ,	y		int
 ,	boardside	boolean[]
-) RETURNS SETOF prevalidmove
+) RETURNS SETOF pregamemove
 LANGUAGE plpgsql AS $BODY$
 DECLARE
 	s chess_square := g.board[x][y];
-	m prevalidmove;
+	m pregamemove;
 	dz d_chess_square;
 	dx int;
 	dy int;
@@ -418,7 +418,7 @@ $BODY$;
 
 CREATE FUNCTION prevalid_moves (
 	g	gamestate
-) RETURNS SETOF prevalidmove
+) RETURNS SETOF pregamemove
 LANGUAGE plpgsql AS $BODY$
 -- This function produces the set of prevalid moves starting from
 -- configuration g.
@@ -459,13 +459,9 @@ DECLARE
 	m	gamemove;
 	g1	gamestate;
 BEGIN
-	-- (*) Assertion
-	IF g.next IS NULL THEN
-		RAISE EXCEPTION 'E1';
-	END IF;
 	-- (*) Filter next_moves
 	FOR i IN 1 .. array_upper((g).next,1) LOOP
-		m := prevalidmove_as_gamemove((g).next[i]);
+		m := pregamemove_as_gamemove((g).next[i]);
 		g1 := apply_move(g,m);
 		-- Consider the move only if it doesn't leave own King
 		-- under attack
