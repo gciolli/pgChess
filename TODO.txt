@@ -6,20 +6,28 @@ h2. Done
 
 * general: improve speed (currently very slow...)
 
+* there is a bug (computer player does not escape from Check) which I
+  suppose comes from the fact that sides aren't checked properly. That
+  is, I suppose it gets the wrong side, so it doesn't recognise Check
+  because it looks whether the other King is under attack.
+
 h2. To Do
 
-* performance test with different hardware (memory, CPU, disks)
+* check that the user move is allowed before applying it:
+** does it comply with the movement rules?
+** does it move the enemy piece instead of its own?
+** does it leave own King under attack?
 
 * add support for castling
 
 * add support for en-passant
 
+* performance test with different hardware (memory, CPU, disks)
+
 * test how much compacting the status can improve speed
 
 * rewrite some routines using faster algorithms (and maybe a different
   language?)
-
-* check that the user move is allowed before applying it
 
 * make sure the computer player understand the importance of check
 

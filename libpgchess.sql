@@ -187,10 +187,9 @@ $BODY$;
 
 CREATE FUNCTION is_king_under_attack(
 	g		gamestate
-,	our_side	boolean
 ) RETURNS boolean LANGUAGE plpgsql AS $BODY$
 DECLARE
-	our_king	chess_square := CASE WHEN our_side = true THEN 'White King' ELSE 'Black King' END;
+	our_king	chess_square := CASE WHEN g.side_next THEN 'Black King' ELSE ' King' END;
 	i		int;
 BEGIN
 	FOR i IN 1 .. array_upper(g.next,1) LOOP
@@ -206,7 +205,6 @@ CREATE FUNCTION chesspiece_moves(
 	g		gamestate
 ,	x		int
 ,	y		int
-,	side		boolean
 ,	boardside	boolean[]
 ) RETURNS SETOF gamemove
 LANGUAGE plpgsql AS $BODY$
@@ -230,11 +228,11 @@ BEGIN
 				dz.x2 := CASE WHEN dz.x2 + dx BETWEEN 1 AND 8 THEN dz.x2 + dx ELSE NULL END;
 				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
 				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
-				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = g.side_next;
 				m.d_score := score_of_chess_square((g).board[dz.x2][dz.y2]);
 				m.mine := dz;
 				RETURN NEXT m;
-				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT g.side_next;
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Rook' OR  s = 'White Rook' THEN
@@ -246,11 +244,11 @@ BEGIN
 				dz.x2 := CASE WHEN dz.x2 + dx BETWEEN 1 AND 8 THEN dz.x2 + dx ELSE NULL END;
 				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
 				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
-				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = g.side_next;
 				m.d_score := score_of_chess_square((g).board[dz.x2][dz.y2]);
 				m.mine := dz;
 				RETURN NEXT m;
-				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT g.side_next;
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Bishop' OR  s = 'White Bishop' THEN
@@ -262,11 +260,11 @@ BEGIN
 				dz.x2 := CASE WHEN dz.x2 + dx BETWEEN 1 AND 8 THEN dz.x2 + dx ELSE NULL END;
 				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
 				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
-				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = g.side_next;
 				m.d_score := score_of_chess_square((g).board[dz.x2][dz.y2]);
 				m.mine := dz;
 				RETURN NEXT m;
-				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT g.side_next;
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Knight' OR  s = 'White Knight' THEN
@@ -278,11 +276,11 @@ BEGIN
 				dz.x2 := CASE WHEN dz.x2 + dx BETWEEN 1 AND 8 THEN dz.x2 + dx ELSE NULL END;
 				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
 				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
-				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = g.side_next;
 				m.d_score := score_of_chess_square((g).board[dz.x2][dz.y2]);
 				m.mine := dz;
 				RETURN NEXT m;
-				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT g.side_next;
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black King' OR  s = 'White King' THEN
@@ -294,11 +292,11 @@ BEGIN
 				dz.x2 := CASE WHEN dz.x2 + dx BETWEEN 1 AND 8 THEN dz.x2 + dx ELSE NULL END;
 				dz.y2 := CASE WHEN dz.y2 + dy BETWEEN 1 AND 8 THEN dz.y2 + dy ELSE NULL END;
 				EXIT loop1 WHEN dz.x2 IS NULL OR dz.y2 IS NULL;
-				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = g.side_next;
 				m.d_score := score_of_chess_square((g).board[dz.x2][dz.y2]);
 				m.mine := dz;
 				RETURN NEXT m;
-				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT side;
+				EXIT loop1 WHEN boardside[dz.x2][dz.y2] = NOT g.side_next;
 			END LOOP;
 		END LOOP;
 	ELSIF s = 'Black Pawn' THEN
@@ -320,7 +318,7 @@ BEGIN
 			RETURN NEXT m;
 		END IF;
 		-- capturing left
-		IF x > 1 AND boardside[x-1][y-1] = NOT side THEN
+		IF x > 1 AND boardside[x-1][y-1] = NOT g.side_next THEN
 			dz.x2 := dz.x1 - 1;
 			dz.y2 := dz.y1 - 1;
 			m.d_score := 
@@ -330,7 +328,7 @@ BEGIN
 			RETURN NEXT m;
 		END IF;
 		-- capturing right
-		IF x < 8 AND boardside[x+1][y-1] = NOT side THEN
+		IF x < 8 AND boardside[x+1][y-1] = NOT g.side_next THEN
 			dz.x2 := dz.x1 + 1;
 			dz.y2 := dz.y1 - 1;
 			m.d_score := 
@@ -358,7 +356,7 @@ BEGIN
 			RETURN NEXT m;
 		END IF;
 		-- capturing left
-		IF x > 1 AND boardside[x-1][y+1] = NOT side THEN
+		IF x > 1 AND boardside[x-1][y+1] = NOT g.side_next THEN
 			dz.x2 := dz.x1 - 1;
 			dz.y2 := dz.y1 + 1;
 			m.d_score := 
@@ -368,7 +366,7 @@ BEGIN
 			RETURN NEXT m;
 		END IF;
 		-- capturing right
-		IF x < 8 AND boardside[x+1][y+1] = NOT side THEN
+		IF x < 8 AND boardside[x+1][y+1] = NOT g.side_next THEN
 			dz.x2 := dz.x1 + 1;
 			dz.y2 := dz.y1 + 1;
 			m.d_score := 
@@ -384,12 +382,11 @@ END;
 $BODY$;
 
 CREATE FUNCTION prevalid_moves (
-	v_g	gamestate
-,	side	boolean
+	g	gamestate
 ) RETURNS SETOF gamemove
 LANGUAGE plpgsql AS $BODY$
 -- This function produces the set of prevalid moves starting from
--- configuration v_g, assuming that side "side" is due to move next.
+-- configuration g, assuming that side "side" is due to move next.
 DECLARE
 	x chessint;
 	y chessint;
@@ -397,15 +394,15 @@ DECLARE
 BEGIN
 	FOR x IN 1 .. 8 LOOP
 	FOR y IN 1 .. 8 LOOP
-		boardside[x][y] := side_of_chess_square(v_g.board[x][y]);
+		boardside[x][y] := side_of_chess_square(g.board[x][y]);
 	END LOOP;
 	END LOOP;
 	FOR x IN 1 .. 8 LOOP
 	FOR y IN 1 .. 8 LOOP
-		IF boardside[x][y] = side THEN
+		IF boardside[x][y] = g.side_next THEN
 			RETURN QUERY
 				SELECT *
-				FROM chesspiece_moves(v_g,x,y,side,boardside);
+				FROM chesspiece_moves(g,x,y,boardside);
 		END IF;
 	END LOOP;
 	END LOOP;
@@ -422,25 +419,15 @@ LANGUAGE plpgsql AS $BODY$
 -- "answers", and finally (c) using the information in (b) to select
 -- only those moves that do not leave the King under attack.
 DECLARE
-	side	boolean;
 	rec	record;
 	g1	gamestate;
 	m1	gamemove;
 BEGIN
-	-- (*) Whose side is due to move?
-	IF COALESCE(array_upper((v_g).moves,1),0) % 2 = 0 THEN
-		side := true;
-	ELSE
-		side := false;
-	END IF;
-	IF side != g1.side_next THEN
-		RAISE EXCEPTION 'side = % != side_next = %', side, g1.side_next;
-	END IF;
 	-- (*) Compute next_moves in case they are missing
 	IF v_g.next IS NULL THEN
 		SELECT array_agg(m.*)
 			INTO v_g.next
-			FROM prevalid_moves(v_g,side) m;
+			FROM prevalid_moves(v_g) m;
 	END IF;
 	-- (*) Filter next_moves
 	FOR i IN 1 .. array_upper((v_g).next,1) LOOP
@@ -448,10 +435,10 @@ BEGIN
 		g1 := apply_move(v_g,m1);
 		SELECT array_agg(m.*)
 			INTO g1.next
-			FROM prevalid_moves(g1,NOT side) m;
+			FROM prevalid_moves(g1) m;
 		-- return the moves m1 whose answers do not "capture"
 		-- the King
-		IF NOT is_king_under_attack(g1,side) THEN
+		IF NOT is_king_under_attack(g1) THEN
 			RETURN NEXT m1;
 		END IF;
 		-- FIXME: g1.next are computed and then thrown
@@ -466,17 +453,13 @@ CREATE FUNCTION apply_move(
 ) RETURNS gamestate
 LANGUAGE plpgsql
 AS $BODY$
-DECLARE
-	this_side boolean;
 BEGIN
-	this_side := 
-		side_of_chess_square(v_g.board[(v_m).mine.x1][(v_m).mine.y1]);
 	-- (0) can't capture the King!
 	IF v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'White King'
 	OR v_g.board[(v_m).mine.x2][(v_m).mine.y2] = 'Black King' THEN
 		RAISE EXCEPTION 'Tried to capture % @ %,%',
 			v_g.board[(v_m).mine.x2][(v_m).mine.y2],
-			(v_m).mine.x2,(v_m).mine.x2;
+			(v_m).mine.x2,(v_m).mine.y2;
 	END IF;
 	-- (1) apply the move
 	v_g.board[(v_m).mine.x2][(v_m).mine.y2] := 
@@ -563,6 +546,7 @@ BEGIN
 		  ,   a[2]
 		  ,   CAST(translate(a[4],'abcdefgh','12345678') AS int)
 		  ,   a[5]);
+	-- TODO: check whether the move is valid
 	TRUNCATE my_moves;
 	INSERT INTO my_moves(current_game,this_move,move_level,score)
 		SELECT	a.game

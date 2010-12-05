@@ -36,8 +36,8 @@ CREATE FUNCTION ui_display()
 RETURNS SETOF text
 LANGUAGE plpgsql AS $BODY$
 BEGIN
-	RETURN QUERY SELECT count(1) || ' my_moves' FROM my_moves;
-	RETURN QUERY SELECT count(1) || ' my_states' FROM my_states;
+--	RETURN QUERY SELECT count(1) || ' my_moves' FROM my_moves;
+--	RETURN QUERY SELECT count(1) || ' my_states' FROM my_states;
 	RETURN QUERY
 		SELECT display(game)
 		FROM my_states
