@@ -146,18 +146,51 @@ CREATE TYPE d_chess_square AS (
 ,	y2	chessint
 );
 
-CREATE TYPE gamemove AS (
+CREATE TYPE prevalidmove AS (
 	d_score	real
 ,	mine	d_chess_square
 );
+
+CREATE TYPE gamemove AS (
+	d_score	real
+,	mine	d_chess_square
+,	next	prevalidmove[]
+);
+
+CREATE FUNCTION prevalidmove_as_gamemove (
+	p prevalidmove
+) RETURNS gamemove
+LANGUAGE plpgsql
+AS $BODY$
+DECLARE
+	m gamemove;
+BEGIN
+	m.d_score := p.d_score;
+	m.mine := p.mine;
+	m.next := NULL;
+	RETURN m;
+END;
+$BODY$;
+
+COMMENT ON TYPE prevalidmove IS 'Recursive types are not allowed, so
+we had to implement a separate type "prevalidmove", in order to endow
+a gamemove with a list "next" of prevalid gamemoves. We embed the
+prevalidmove type as a gamemove where next is NULL via the function
+prevalidmove_as_gamemove. Its name is long but unambiguous, to reflect
+the author''s preference for strong typing practices.';
 
 CREATE TYPE gamestate AS (
 	score	real
 ,	moves	gamemove[]
 ,	board	chess_square[]
-,	next	gamemove[]
+,	next	prevalidmove[]
 ,	side_next boolean
 );
+
+COMMENT ON TYPE gamestate IS 'A gamestate has the property that next
+IS NOT NULL, because it has been obtained by applying a valid move,
+which carries the "next" prevalid moves which have been computed to
+check its own validity.';
 
 ------------------------------------------------------------
 -- (*) Implementing games and moves
@@ -181,6 +214,9 @@ BEGIN
 		}' AS chess_square[]);
 	g.moves := CAST(ARRAY[] AS gamemove[]);
 	g.side_next := true;
+	SELECT array_agg(pm.*)
+		INTO g.next
+		FROM prevalid_moves(g) pm;
 	RETURN g;
 END
 $BODY$;
@@ -206,15 +242,14 @@ CREATE FUNCTION chesspiece_moves(
 ,	x		int
 ,	y		int
 ,	boardside	boolean[]
-) RETURNS SETOF gamemove
+) RETURNS SETOF prevalidmove
 LANGUAGE plpgsql AS $BODY$
 DECLARE
 	s chess_square := g.board[x][y];
-	m gamemove;
+	m prevalidmove;
 	dz d_chess_square;
 	dx int;
 	dy int;
---FIXME delete	turn int;
 BEGIN
 	dz.x1 := x;
 	dz.y1 := y;
@@ -383,10 +418,10 @@ $BODY$;
 
 CREATE FUNCTION prevalid_moves (
 	g	gamestate
-) RETURNS SETOF gamemove
+) RETURNS SETOF prevalidmove
 LANGUAGE plpgsql AS $BODY$
 -- This function produces the set of prevalid moves starting from
--- configuration g, assuming that side "side" is due to move next.
+-- configuration g.
 DECLARE
 	x chessint;
 	y chessint;
@@ -414,35 +449,33 @@ CREATE FUNCTION valid_moves (
 ) RETURNS SETOF gamemove
 LANGUAGE plpgsql AS $BODY$
 -- This function produces the set of valid moves starting from
--- configuration g. This is obtained by (a) taking all the prevalid
--- moves, (b) endowing each prevalid move with the list of possible
--- "answers", and finally (c) using the information in (b) to select
--- only those moves that do not leave the King under attack.
+-- configuration g. This is obtained by (a) taking the list all the
+-- prevalid moves, which is available as g.next, (b) endowing each
+-- prevalid move with the list of possible "answers", and finally (c)
+-- using the information in (b) to select only those moves that do not
+-- leave the King under attack.
 DECLARE
 	rec	record;
+	m	gamemove;
 	g1	gamestate;
-	m1	gamemove;
 BEGIN
-	-- (*) Compute next_moves in case they are missing
+	-- (*) Assertion
 	IF g.next IS NULL THEN
-		SELECT array_agg(m.*)
-			INTO g.next
-			FROM prevalid_moves(g) m;
+		RAISE EXCEPTION 'E1';
 	END IF;
 	-- (*) Filter next_moves
 	FOR i IN 1 .. array_upper((g).next,1) LOOP
-		m1 := (g).next[i];
-		g1 := apply_move(g,m1);
-		SELECT array_agg(m.*)
-			INTO g1.next
-			FROM prevalid_moves(g1) m;
-		-- return the moves m1 whose answers do not "capture"
-		-- the King
+		m := prevalidmove_as_gamemove((g).next[i]);
+		g1 := apply_move(g,m);
+		-- Consider the move only if it doesn't leave own King
+		-- under attack
 		IF NOT is_king_under_attack(g1) THEN
-			RETURN NEXT m1;
+			-- Copy from g1 the list of next moves, that
+			-- has been computed by the previous
+			-- statement.
+			m.next := g1.next;
+			RETURN NEXT m;
 		END IF;
-		-- FIXME: g1.next are computed and then thrown
-		-- away. Maybe we can optimise by recycling them...
 	END LOOP;
 END;
 $BODY$;
@@ -479,6 +512,10 @@ BEGIN
 	g.moves := g.moves || m;
 	-- (5) now the other side plays
 	g.side_next := NOT g.side_next;
+	-- (6) compute the possible answers
+	SELECT array_agg(pm.*)
+		INTO g.next
+		FROM prevalid_moves(g) pm;
 	RETURN g;
 END;
 $BODY$;
@@ -548,7 +585,8 @@ BEGIN
 		  ,   a[2]
 		  ,   CAST(translate(a[4],'abcdefgh','12345678') AS int)
 		  ,   a[5]);
-	-- TODO: check whether the move is valid
+	-- TODO: check whether the move is valid (illegal moves are
+	-- quite useful for debugging :-)
 	TRUNCATE my_moves;
 	INSERT INTO my_moves(current_game,this_move,move_level,score)
 		SELECT	a.game
