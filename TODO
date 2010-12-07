@@ -1,4 +1,4 @@
-h2. Done
+h2. Already done
 
 * make sure nobody captures a King
 
@@ -9,9 +9,11 @@ h2. Done
 * there is a bug (computer player does not escape from Check) which I
   suppose comes from the fact that sides aren't checked properly. That
   is, I suppose it gets the wrong side, so it doesn't recognise Check
-  because it looks whether the other King is under attack.
+  because it looks to the wrong King...
 
-h2. To Do
+h2. Still to do
+
+Here follows a categorised list of "to do" items.
 
 h3. UI
 
@@ -20,6 +22,10 @@ h3. UI
 ** does it move the enemy piece instead of its own?
 ** does it leave own King under attack?
 
+Please note: it is actually convenient to be allowed to make
+impossible moves, especially in debugging. Therefore this task is
+actually lower priority.
+
 h3. Optimisation
 
 * performance test with different hardware (memory, CPU, disks)
@@ -27,7 +33,8 @@ h3. Optimisation
 * rewrite some routines using faster algorithms (and maybe a different
   language?)
 
-* test how beneficial it would be to compact the game status
+* test how beneficial it would be to compact the game status: faster
+  to store, but slower to handle...
 
 h3. AI
 
@@ -41,8 +48,8 @@ h3. Chess rules
 
 * implement en-passant
 
-* implement stalemate
+* implement a stalemate message
 
-* implement checkmate
+* implement a checkmate message
 
 * implement draw by 3-fold repeat
