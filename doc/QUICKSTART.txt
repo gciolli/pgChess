@@ -1,0 +1,98 @@
+                          PGChess Quickstart
+                          ==================
+
+
+
+Tested on version 0.1.0 of the pgChess extension.
+
+Step 0 
+=======
+
+Extension pgchess requires extension pg2podg, which is available on
+PGXN as well.
+
+Step 1 
+=======
+
+Install the extensions on a PostgreSQL 9.1+ server.
+You can use pgxnclient, for instance:
+
+
+  pgxnclient install ./pgchess-0.1.0.zip
+  pgxnclient install ./pg2podg-0.1.0.zip
+
+Step 2 
+=======
+
+Unpack the additional files:
+
+
+  unzip pgchess-0.1.0.zip
+  cd pgchess-0.1.0/test/sql
+
+Step 3 
+=======
+
+Create the database objects:
+
+
+  gianni=# CREATE EXTENSION pgchess;
+  CREATE EXTENSION
+  gianni=# CREATE EXTENSION pg2podg;
+  CREATE EXTENSION
+
+Step 4 
+=======
+Load a default game in the chessboard:
+
+
+  \i play/new-game.sql
+
+Step 5 
+=======
+View the game in FEN notation
+
+
+  gianni=# select %% game from status;
+                           ?column?                         
+  ----------------------------------------------------------
+   rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+  (1 row)
+
+Step 5a (optional) 
+===================
+If you issue
+
+
+  \pset format unaligned
+
+then you can use an enhanced display, provided that your terminal is
+VT100 compatible:
+
+
+  gianni=# \pset format unaligned
+  Output format is unaligned.
+  gianni=# select # game from status;
+  ?column?
+   ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜  8
+   ♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟  7
+                    6
+                    5
+                    4
+                    3
+   ♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙  2
+   ♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖  1
+   a b c d e f g h  
+  (1 row)
+
+Step 6 
+=======
+Now you can start a CPU v CPU game:
+
+
+  \i play/PG_v_PG.sql
+
+you can interrupt the game with CTRL-C. Since each half-move is
+executed in a separate transaction, the game will be left in the state
+corresponding to the last completed move.
+
