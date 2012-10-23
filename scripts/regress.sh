@@ -9,7 +9,11 @@ f () {
     Expected=test/sql/expected/${Stem}.txt
     Actual=test/sql/tmp/${Stem}.txt
     mkdir -p test/sql/tmp
-    psql -vVERBOSITY=terse -f $Input 2>$Actual >/dev/null
+    psql -vVERBOSITY=terse 2>$Actual >/dev/null <<EOF
+\i $Input
+\i test/sql/regress/_reset-games.sql
+\i test/sql/regress/_.sql
+EOF
     if diff $Expected $Actual > $TmpFile ; then
 	echo "$(date +%s.%N) [OK] $Stem"
     else
