@@ -1,5 +1,7 @@
-pgchess 0.1.0
+pgchess 0.1.1
 =============
+
+pgchess is a PostgreSQL 9.1+ extension for the game of Chess.
 
 Build
 -----
@@ -58,6 +60,19 @@ tests and to play a game of Chess.
 
 Both pgchess and pg2podg are available via [the PostgreSQL Extension
 Network](http://pgxn.org).
+
+Upgrades from previous versions
+-------------------------------
+
+Currently the only way to upgrade from a previous version of pgchess is
+to drop the extension, uninstall the old version, install the new
+version and finally (re)create the extension.
+
+In particular, any extensions that depend on pgchess or on some of its
+objects need to be dropped and recreated.
+
+Please notice that the pgchess extension so far contains only types,
+functions and operators.
 
 Copyright and Licence
 ---------------------
