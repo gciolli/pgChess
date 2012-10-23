@@ -1,3 +1,12 @@
+Version 0.1.1 (stable), released 2012-10-23
+
+	* Documentation improved and converted to Markdown format.
+
+	* Regression tests now work with PostgreSQL 9.1 as well.
+
+	* Marked as "stable", since version 0.1.0 was marked stable by
+	mistake.
+
 Version 0.1.0 (unstable), released 2012-10-22
 
 	* Initial release.
