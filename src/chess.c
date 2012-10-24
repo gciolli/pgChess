@@ -180,27 +180,33 @@ aux_chess_apply_candidate_move(chess_game_status *s)
 		{
 			s->b[5][0] = 'R';
 			s->b[7][0] = ' ';
-			s->c[0] = 'n';
-			s->c[1] = 'n';
 		}
 	if (s->b[x1][y1] == 'K' && x1 == 4 && x2 == 2)
 		{
 			s->b[3][0] = 'R';
 			s->b[0][0] = ' ';
-			s->c[0] = 'n';
-			s->c[1] = 'n';
 		}
 	if (s->b[x1][y1] == 'k' && x1 == 4 && x2 == 6)
 		{
 			s->b[5][7] = 'r';
 			s->b[7][7] = ' ';
-			s->c[2] = 'n';
-			s->c[3] = 'n';
 		}
 	if (s->b[x1][y1] == 'k' && x1 == 4 && x2 == 2)
 		{
 			s->b[3][7] = 'r';
 			s->b[0][7] = ' ';
+		}
+
+	/*
+	 * Moving a King waives the castling status of its castles.
+	 */
+	if (s->b[x1][y1] == 'K')
+		{
+			s->c[0] = 'n';
+			s->c[1] = 'n';
+		}
+	if (s->b[x1][y1] == 'k')
+		{
 			s->c[2] = 'n';
 			s->c[3] = 'n';
 		}
