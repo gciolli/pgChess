@@ -67,6 +67,8 @@ typedef struct
 	int previous_moves_n;
 	int *previous_moves;
 
+	int halfmove_counter;
+
 	/* Forsyth-Edwards Notation */
 	char fen[90];
 	/* 
@@ -148,7 +150,7 @@ void
 aux_chess_apply_candidate_move(chess_game_status *s)
 {
 	int x1=0, x2=0, y1=0, y2=0;
-	char p1, p2;
+	char p1='-', p2='-';
 
 	if (s->candidate_move != ChessVoidMove)
 		{
@@ -176,22 +178,22 @@ aux_chess_apply_candidate_move(chess_game_status *s)
 	 * Rook must be moved too.
 	 */
 
-	if (s->b[x1][y1] == 'K' && x1 == 4 && x2 == 6)
+	if (p1 == 'K' && x1 == 4 && x2 == 6)
 		{
 			s->b[5][0] = 'R';
 			s->b[7][0] = ' ';
 		}
-	if (s->b[x1][y1] == 'K' && x1 == 4 && x2 == 2)
+	if (p1 == 'K' && x1 == 4 && x2 == 2)
 		{
 			s->b[3][0] = 'R';
 			s->b[0][0] = ' ';
 		}
-	if (s->b[x1][y1] == 'k' && x1 == 4 && x2 == 6)
+	if (p1 == 'k' && x1 == 4 && x2 == 6)
 		{
 			s->b[5][7] = 'r';
 			s->b[7][7] = ' ';
 		}
-	if (s->b[x1][y1] == 'k' && x1 == 4 && x2 == 2)
+	if (p1 == 'k' && x1 == 4 && x2 == 2)
 		{
 			s->b[3][7] = 'r';
 			s->b[0][7] = ' ';
@@ -200,12 +202,12 @@ aux_chess_apply_candidate_move(chess_game_status *s)
 	/*
 	 * Moving a King waives the castling status of its castles.
 	 */
-	if (s->b[x1][y1] == 'K')
+	if (p1 == 'K')
 		{
 			s->c[0] = 'n';
 			s->c[1] = 'n';
 		}
-	if (s->b[x1][y1] == 'k')
+	if (p1 == 'k')
 		{
 			s->c[2] = 'n';
 			s->c[3] = 'n';
@@ -232,6 +234,15 @@ aux_chess_apply_candidate_move(chess_game_status *s)
 					s->b[x2][y2] = ChessMovePPCToChar(ChessMovePPC(s->candidate_move));
 				}
 		}
+
+	/*
+	 * A pawn move or a piece capture reset the halfmove counter.
+	 */
+
+	if (p1 == 'p' || p1 == 'P' || p2 != ' ')
+		s->halfmove_counter = 0;
+	else
+		s->halfmove_counter ++;
 }
 
 chess_game_status *
@@ -287,7 +298,7 @@ int aux_read_game(chess_game_status *s, Datum d)
 	 * SQL object definitions which are relevant here:
 	 *
 	 * CREATE TYPE move AS (x1 smallint, y1 smallint, x2 smallint, y2 smallint, ppc smallint);
-	 * CREATE TYPE game AS (b character(69), m int2[]);
+	 * CREATE TYPE game AS (board character(69), halfmove_counter int2, moves int2[]);
 	 */
 
 	/* game.board */
@@ -303,6 +314,12 @@ int aux_read_game(chess_game_status *s, Datum d)
 	s->c[2] = game[66];
 	s->c[3] = game[67];
 	s->last_piece_captured = game[68];
+
+	/* game.halfmove_counter */
+	d = GetAttributeByName(h, "halfmove_counter", &isnull);
+	if (isnull)
+		return 1;
+	s->halfmove_counter = DatumGetInt16(d);
 					
 	/* game.moves */
 	d = GetAttributeByName(h, "moves", &isnull);
@@ -453,6 +470,12 @@ aux_chess_formal_move_next(chess_game_status *s)
 
 	int i, j;
 	int x1=0, y1=0, x2, y2, ym, dx, dy, id, tg;
+
+	if (s->halfmove_counter >= 50)
+		{
+			s->candidate_move=ChessEndOfMoves;
+			return 0;
+		}
 
 	x2 = ChessMoveX2(s->move_iterator);
 	y2 = ChessMoveY2(s->move_iterator);
@@ -888,8 +911,7 @@ aux_chess_update_fen(chess_game_status *s)
 			if (s->c[3] == 'y') { sprintf(p, "q"); p++; }
 		}
 	/* FIXME: En passant target square is not implemented */
-	/* FIXME: Halfmove clock is always zero */
-	sprintf(p, " - 0 %d", 1 + s->previous_moves_n / 2);
+	sprintf(p, " - %d %d", s->halfmove_counter, 1 + s->previous_moves_n / 2);
 }
 
 /*

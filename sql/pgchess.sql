@@ -202,7 +202,7 @@ CREATE OPERATOR #
 , RIGHTARG = move
 );
 
-CREATE TYPE game AS (board character(69), moves int2[]);
+CREATE TYPE game AS (board character(69), halfmove_counter int2, moves int2[]);
 
 COMMENT ON TYPE game IS
 
@@ -362,6 +362,7 @@ BEGIN
 	-- (4) en-passant target square
 	-- TODO
 	-- (5) halfmove clock
+	g.halfmove_counter := a[5] :: int2;
 	-- TODO
 	-- (6) fullmove number
 	FOR i IN 2 .. a[6] LOOP
@@ -453,6 +454,7 @@ BEGIN
 	||	'pppppppp'
 	||	'rnbqkbnr'
 	||	'yyyy ';
+	o.halfmove_counter := 0;
 	o.moves := ARRAY[] :: int2[];
 END;
 $BODY$;
@@ -479,6 +481,7 @@ DECLARE
 	square1	character(1) := substr(b.board, i1, 1);
 	square2	character(1) := substr(b.board, i2, 1);
 BEGIN
+	o.halfmove_counter := b.halfmove_counter + 1;
 	IF square1 = 'P' AND (m).y1 = 7 AND (m).y2 = 8 THEN
 		square1 := CASE (m).ppc
 			   WHEN 0 THEN 'Q'
@@ -546,6 +549,9 @@ BEGIN
 		o.board := overlay(o.board placing 'n' from 68 for 1);
 	ELSE NULL;
 	END CASE;
+	IF square1 = 'p' OR square1 = 'P' OR square2 != ' ' THEN
+		o.halfmove_counter := 0;
+	END IF;
 END;
 $BODY$;
 
