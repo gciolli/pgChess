@@ -1,3 +1,7 @@
+Version 0.1.5 (stable), released 2012-10-27
+
+	* Implemented the 50-halfmove rule.
+
 Version 0.1.4 (stable), released 2012-10-26
 
 	* Bugfix: merged pull request #1 from fornwall/master
