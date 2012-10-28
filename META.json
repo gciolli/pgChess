@@ -11,7 +11,7 @@
       "pgchess": {
          "abstract": "A Chess extension",
          "file": "sql/pgchess.sql",
-         "docfile": "doc/QUICKSTART.txt",
+         "docfile": "doc/QUICKSTART.md",
          "version": "0.1.5"
       }
    },
