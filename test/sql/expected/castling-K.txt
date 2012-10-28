@@ -2,13 +2,13 @@ psql:test/sql/regress/_.sql:51: INFO:  1 turns to go (1 games)
 ID: 8/8/8/8/8/4k3/7P/4K2R w K - 0 2
 psql:test/sql/regress/_.sql:51: INFO:  Score: -7.100
 Choices:
-	0.900 {0.900} 8/8/8/8/8/4k3/7P/5RK1 b K - 0 2
-	0.700 {0.700} 8/8/8/8/8/4k3/7P/4KR2 b K - 0 2
-	0.600 {0.600} 8/8/8/8/8/4k3/7P/4K1R1 b K - 0 2
+	0.900 {0.900} 8/8/8/8/8/4k3/7P/5RK1 b K - 1 2
+	0.700 {0.700} 8/8/8/8/8/4k3/7P/4KR2 b K - 1 2
+	0.600 {0.600} 8/8/8/8/8/4k3/7P/4K1R1 b K - 1 2
 	0.000 {0.000} 8/8/8/8/7P/4k3/8/4K2R b K - 0 2
-	0.000 {0.000} 8/8/8/8/8/4k3/7P/3K3R b K - 0 2
+	0.000 {0.000} 8/8/8/8/8/4k3/7P/3K3R b K - 1 2
 	-0.100 {-0.100} 8/8/8/8/8/4k2P/8/4K2R b K - 0 2
-	-0.200 {-0.200} 8/8/8/8/8/4k3/7P/5K1R b K - 0 2
+	-0.200 {-0.200} 8/8/8/8/8/4k3/7P/5K1R b K - 1 2
 psql:test/sql/regress/_.sql:51: INFO:  0 turns to go (8 games)
-ID: 8/8/8/8/8/4k3/7P/5RK1 b K - 0 2
+ID: 8/8/8/8/8/4k3/7P/5RK1 b K - 1 2
 psql:test/sql/regress/_.sql:51: INFO:  game ended after 1 iterations
