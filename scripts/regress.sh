@@ -8,7 +8,6 @@ f () {
     Input=test/sql/regress/${Stem}.sql
     Expected=test/sql/expected/${Stem}.txt
     Actual=test/sql/tmp/${Stem}.txt
-    mkdir -p test/sql/tmp
     psql -vVERBOSITY=terse 2>$Actual >/dev/null <<EOF
 \i $Input
 \i test/sql/regress/_reset-games.sql
@@ -22,6 +21,9 @@ EOF
 	rm -f $TmpFile
     fi
 }
+
+rm -rf test/sql/tmp
+mkdir -p test/sql/tmp
 
 echo "$(date +%s.%N) [--] BEGIN"
 f score-knight
