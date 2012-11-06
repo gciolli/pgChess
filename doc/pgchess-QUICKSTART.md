@@ -6,8 +6,9 @@ Notes
 
 We require extensions **pgchess** and **pg2podg**.
 
-The procedure described in this document has been tested on versions
-0.1.5 of both packages, installed on a PostgreSQL 9.2 server.
+The procedure described in this document has been tested on a PostgreSQL
+9.2 server, where pgchess version 0.1.6 and pg2podg version 0.1.3 have
+been installed.
 
 The SQL files in the `test/sql/play` directory make use of the
 convenient `\ir` meta command, which was introduced on PostgreSQL 9.2;
@@ -31,8 +32,8 @@ Download and unpack the `pgchess` archive, which contains some
 additional files:
 
     pgxnclient download pgchess
-    unzip pgchess-0.1.5.zip
-    cd pgchess-0.1.5/test/sql
+    unzip pgchess-0.1.6.zip
+    cd pgchess-0.1.6/test/sql
 
 Step 3
 ------
