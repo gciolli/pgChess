@@ -8,6 +8,11 @@
 PG_MODULE_MAGIC;
 #endif
 
+/* htup.h was reorganized for 9.3, so now we need this header */
+#if PG_VERSION_NUM >= 90300
+#include "access/htup_details.h"
+#endif
+
 /*
  * Memory context for formal_moves
  */
