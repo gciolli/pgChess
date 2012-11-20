@@ -1,4 +1,4 @@
-pgchess 0.1.6
+pgchess 0.1.7
 =============
 
 pgchess is a PostgreSQL 9.1+ extension for the game of Chess.

@@ -1,3 +1,7 @@
+Version 0.1.7 (stable), released 2012-11-20
+
+	* Removed an .o file which was wrongly included in 0.1.6 package.
+
 Version 0.1.6 (stable), released 2012-11-06
 
 	* 9.3 bug fix, by schmiddy.
