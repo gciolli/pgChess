@@ -2,7 +2,7 @@
    "name": "pgchess",
    "abstract": "A Chess extension",
    "description": "This extension provides tools to play Chess. Includes an AI player.",
-   "version": "0.1.6",
+   "version": "0.1.7",
    "maintainer": [
       "Gianni Ciolli <gianni.ciolli@2ndQuadrant.it>"
    ],
@@ -12,7 +12,7 @@
          "abstract": "A Chess extension",
          "file": "sql/pgchess.sql",
          "docfile": "doc/pgchess-QUICKSTART.md",
-         "version": "0.1.6"
+         "version": "0.1.7"
       }
    },
    "prereqs": {
