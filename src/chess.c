@@ -343,7 +343,7 @@ int aux_read_game(chess_game_status *s, Datum d)
 					s->previous_moves_n = ARR_DIMS(moves)[0];
 					s->previous_moves = (int *) palloc0(sizeof(int) * s->previous_moves_n);
 					
-					moves_iterator = array_create_iterator(moves, 0);
+					moves_iterator = array_create_iterator(moves, 0, NULL);
 					for (i = 0; array_iterate(moves_iterator, &d, &isnull); i++)
 						{
 							s->previous_moves[i] = DatumGetInt16(d);
