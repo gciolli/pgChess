@@ -5,7 +5,7 @@ EXTVERSION   = $(shell grep default_version $(EXTENSION).control | \
 DATA         = $(EXTENSION).sql
 DOCS         = $(wildcard doc/*.md)
 
-REGRESS      = basic
+REGRESS      = basic full-game-10 full-game-3d2
 
 MODULES      = $(patsubst %.c,%,$(wildcard src/*.c))
 PG_CONFIG    = pg_config

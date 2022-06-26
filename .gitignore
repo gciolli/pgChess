@@ -3,3 +3,12 @@
 src/*.bc
 src/*.o
 src/*.so
+
+# We do not commit specific versions of the SQL file, because this
+# extension currently does not need to support ALTER EXTENSION UPDATE
+
+pgchess--*.sql
+
+# Generated files
+results/
+var-play-?.sql

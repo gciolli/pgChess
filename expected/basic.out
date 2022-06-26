@@ -4,13 +4,169 @@
 --\pset tuples_only t
 CREATE EXTENSION pgchess;
 CREATE EXTENSION pg2podg;
-TRUNCATE status, games;
+TRUNCATE games;
 --
--- 1. Castling
+-- The Pawn
+--
+CALL load_game('k7/8/8/3p4/4P3/8/8/7K w - - 0 2');
+CALL ui_loop(depth_target := 1, time_target := NULL , regress := true);
+INFO:  1 turns to go (1 games)
+ID: k7/8/8/3p4/4P3/8/8/7K w - - 0 2
+INFO:  Score: -1.100
+Choices:
+	1.100 {} k7/8/8/3P4/8/8/8/7K b - - 0 2
+	0.500 {} k7/8/8/3p4/4P3/8/6K1/8 b - - 1 2
+	0.200 {} k7/8/8/3p4/4P3/8/7K/8 b - - 1 2
+	0.200 {} k7/8/8/3p4/4P3/8/8/6K1 b - - 1 2
+	0.000 {} k7/8/8/3pP3/8/8/8/7K b - - 0 2
+INFO:  0 turns to go (6 games)
+ID: k7/8/8/3P4/8/8/8/7K b - - 0 2
+INFO:  game ended after 1 iterations
+--
+-- The Knight
+--
+CALL load_game('k7/8/8/3p4/5N2/8/8/7K w - - 0 2');
+CALL ui_loop(depth_target := 1, time_target := NULL , regress := true);
+INFO:  1 turns to go (7 games)
+ID: k7/8/8/3p4/5N2/8/8/7K w - - 0 2
+INFO:  Score: -3.800
+Choices:
+	1.100 {} k7/8/8/3N4/8/8/8/7K b - - 0 2
+	0.400 {} k7/8/8/3p4/5N2/8/6K1/8 b - - 1 2
+	0.200 {} k7/8/8/3p4/5N2/8/7K/8 b - - 1 2
+	0.200 {} k7/8/8/3p4/5N2/8/8/6K1 b - - 1 2
+	0.000 {} k7/8/4N3/3p4/8/8/8/7K b - - 1 2
+	0.000 {} k7/8/8/3p4/8/3N4/8/7K b - - 1 2
+	-0.200 {} k7/8/6N1/3p4/8/8/8/7K b - - 1 2
+	-0.200 {} k7/8/8/3p4/8/8/4N3/7K b - - 1 2
+	-0.400 {} k7/8/8/3p3N/8/8/8/7K b - - 1 2
+	-0.400 {} k7/8/8/3p4/8/7N/8/7K b - - 1 2
+	-0.500 {} k7/8/8/3p4/8/8/6N1/7K b - - 1 2
+INFO:  0 turns to go (18 games)
+ID: k7/8/8/3N4/8/8/8/7K b - - 0 2
+INFO:  game ended after 1 iterations
+--
+-- The Bishop
+--
+CALL load_game('k7/8/8/2p5/8/4B3/8/7K w - - 0 2');
+CALL ui_loop(depth_target := 1, time_target := NULL , regress := true);
+INFO:  1 turns to go (19 games)
+ID: k7/8/8/2p5/8/4B3/8/7K w - - 0 2
+INFO:  Score: -4.200
+Choices:
+	1.400 {} k7/8/8/2B5/8/8/8/7K b - - 0 2
+	0.500 {} k7/8/8/2p5/8/4B3/6K1/8 b - - 1 2
+	0.300 {} k7/8/8/2p5/5B2/8/8/7K b - - 1 2
+	0.200 {} k7/8/8/2p5/8/4B3/7K/8 b - - 1 2
+	0.100 {} k7/8/8/2p5/3B4/8/8/7K b - - 1 2
+	0.100 {} k7/8/8/2p5/8/4B3/8/6K1 b - - 1 2
+	0.000 {} k7/8/8/2p3B1/8/8/8/7K b - - 1 2
+	0.000 {} k7/8/8/2p5/8/8/3B4/7K b - - 1 2
+	-0.200 {} k7/8/7B/2p5/8/8/8/7K b - - 1 2
+	-0.200 {} k7/8/8/2p5/8/8/5B2/7K b - - 1 2
+	-0.200 {} k7/8/8/2p5/8/8/8/2B4K b - - 1 2
+	-0.500 {} k7/8/8/2p5/8/8/8/6BK b - - 1 2
+INFO:  0 turns to go (31 games)
+ID: k7/8/8/2B5/8/8/8/7K b - - 0 2
+INFO:  game ended after 1 iterations
+--
+-- The Rook
+--
+CALL load_game('k7/8/8/3p4/8/3R4/8/7K w - - 0 2');
+CALL ui_loop(depth_target := 1, time_target := NULL , regress := true);
+INFO:  1 turns to go (32 games)
+ID: k7/8/8/3p4/8/3R4/8/7K w - - 0 2
+INFO:  Score: -6.400
+Choices:
+	1.400 {} k7/8/8/3R4/8/8/8/7K b - - 0 2
+	0.500 {} k7/8/8/3p4/8/1R6/8/7K b - - 1 2
+	0.500 {} k7/8/8/3p4/8/3R4/6K1/8 b - - 1 2
+	0.500 {} k7/8/8/3p4/8/R7/8/7K b - - 1 2
+	0.300 {} k7/8/8/3p4/8/2R5/8/7K b - - 1 2
+	0.300 {} k7/8/8/3p4/8/4R3/8/7K b - - 1 2
+	0.300 {} k7/8/8/3p4/8/5R2/8/7K b - - 1 2
+	0.300 {} k7/8/8/3p4/8/6R1/8/7K b - - 1 2
+	0.200 {} k7/8/8/3p4/8/3R4/7K/8 b - - 1 2
+	0.200 {} k7/8/8/3p4/8/3R4/8/6K1 b - - 1 2
+	0.200 {} k7/8/8/3p4/8/7R/8/7K b - - 1 2
+	0.100 {} k7/8/8/3p4/3R4/8/8/7K b - - 1 2
+	0.000 {} k7/8/8/3p4/8/8/3R4/7K b - - 1 2
+	-0.100 {} k7/8/8/3p4/8/8/8/3R3K b - - 1 2
+INFO:  0 turns to go (46 games)
+ID: k7/8/8/3R4/8/8/8/7K b - - 0 2
+INFO:  game ended after 1 iterations
+--
+-- The Queen
+--
+CALL load_game('k7/8/8/2p5/8/8/2Q5/7K w - - 0 2');
+CALL ui_loop(depth_target := 1, time_target := NULL , regress := true);
+INFO:  1 turns to go (47 games)
+ID: k7/8/8/2p5/8/8/2Q5/7K w - - 0 2
+INFO:  Score: -11.600
+Choices:
+	1.700 {} k7/8/8/2Q5/8/8/8/7K b - - 0 2
+	0.800 {} k7/8/8/2p5/4Q3/8/8/7K b - - 1 2
+	0.500 {} k7/8/8/2p5/8/1Q6/8/7K b - - 1 2
+	0.500 {} k7/8/8/2p5/8/3Q4/8/7K b - - 1 2
+	0.500 {} k7/8/8/2p5/8/8/1Q6/7K b - - 1 2
+	0.300 {} k7/8/6Q1/2p5/8/8/8/7K b - - 1 2
+	0.300 {} k7/8/8/2p2Q2/8/8/8/7K b - - 1 2
+	0.300 {} k7/8/8/2p5/2Q5/8/8/7K b - - 1 2
+	0.300 {} k7/8/8/2p5/8/8/2Q3K1/8 b - - 1 2
+	0.300 {} k7/8/8/2p5/8/8/3Q4/7K b - - 1 2
+	0.300 {} k7/8/8/2p5/8/8/4Q3/7K b - - 1 2
+	0.300 {} k7/8/8/2p5/8/8/6Q1/7K b - - 1 2
+	0.300 {} k7/8/8/2p5/8/8/Q7/7K b - - 1 2
+	0.300 {} k7/8/8/2p5/Q7/8/8/7K b - - 1 2
+	0.200 {} k7/7Q/8/2p5/8/8/8/7K b - - 1 2
+	0.200 {} k7/8/8/2p5/8/2Q5/8/7K b - - 1 2
+	0.200 {} k7/8/8/2p5/8/8/2Q5/6K1 b - - 1 2
+	0.200 {} k7/8/8/2p5/8/8/8/1Q5K b - - 1 2
+	0.100 {} k7/8/8/2p5/8/8/2Q4K/8 b - - 1 2
+	0.100 {} k7/8/8/2p5/8/8/5Q2/7K b - - 1 2
+	0.000 {} k7/8/8/2p5/8/8/7Q/7K b - - 1 2
+	0.000 {} k7/8/8/2p5/8/8/8/3Q3K b - - 1 2
+	-0.300 {} k7/8/8/2p5/8/8/8/2Q4K b - - 1 2
+INFO:  0 turns to go (70 games)
+ID: k7/8/8/2Q5/8/8/8/7K b - - 0 2
+INFO:  game ended after 1 iterations
+--
+-- Checkmate
+--
+CALL load_game('1k6/8/1K6/8/8/8/8/7R w - - 0 2');
+CALL ui_loop(depth_target := 1, time_target := NULL , regress := true);
+INFO:  1 turns to go (71 games)
+ID: 1k6/8/1K6/8/8/8/8/7R w - - 0 2
+INFO:  Score: -oo
+Choices:
+	+oo {} 1k5R/8/1K6/8/8/8/8/8 b - - 1 2
+	0.100 {} 1k6/8/1K6/8/8/8/8/2R5 b - - 1 2
+	0.100 {} 1k6/8/1K6/8/8/8/8/R7 b - - 1 2
+	0.000 {} 1k6/7R/1K6/8/8/8/8/8 b - - 1 2
+	0.000 {} 1k6/8/1K6/7R/8/8/8/8 b - - 1 2
+	0.000 {} 1k6/8/1K6/8/7R/8/8/8 b - - 1 2
+	0.000 {} 1k6/8/1K6/8/8/7R/8/8 b - - 1 2
+	0.000 {} 1k6/8/1K6/8/8/8/7R/8 b - - 1 2
+	0.000 {} 1k6/8/1K6/8/8/8/8/3R4 b - - 1 2
+	0.000 {} 1k6/8/1K6/8/8/8/8/4R3 b - - 1 2
+	0.000 {} 1k6/8/1K6/8/8/8/8/5R2 b - - 1 2
+	0.000 {} 1k6/8/1K6/8/8/8/8/6R1 b - - 1 2
+	0.000 {} 1k6/8/2K5/8/8/8/8/7R b - - 1 2
+	0.000 {} 1k6/8/8/1K6/8/8/8/7R b - - 1 2
+	0.000 {} 1k6/8/8/2K5/8/8/8/7R b - - 1 2
+	-0.200 {} 1k6/8/1K5R/8/8/8/8/8 b - - 1 2
+	-0.300 {} 1k6/8/1K6/8/8/8/8/1R6 b - - 1 2
+	-0.300 {} 1k6/8/8/K7/8/8/8/7R b - - 1 2
+	-0.300 {} 1k6/8/K7/8/8/8/8/7R b - - 1 2
+INFO:  0 turns to go (90 games)
+ID: 1k5R/8/1K6/8/8/8/8/8 b - - 1 2
+INFO:  game ended with a victory
+--
+-- Castling
 --
 CALL load_game('8/8/8/8/8/4k3/7P/4K2R w K - 0 2');
 CALL ui_loop(depth_target := 1, time_target := NULL , regress := true);
-INFO:  1 turns to go (1 games)
+INFO:  1 turns to go (91 games)
 ID: 8/8/8/8/8/4k3/7P/4K2R w K - 0 2
 INFO:  Score: -7.100
 Choices:
@@ -21,6 +177,6 @@ Choices:
 	0.000 {} 8/8/8/8/8/4k3/7P/3K3R b K - 1 2
 	-0.100 {} 8/8/8/8/8/4k2P/8/4K2R b K - 0 2
 	-0.200 {} 8/8/8/8/8/4k3/7P/5K1R b K - 1 2
-INFO:  0 turns to go (8 games)
+INFO:  0 turns to go (98 games)
 ID: 8/8/8/8/8/4k3/7P/5RK1 b K - 1 2
 INFO:  game ended after 1 iterations
