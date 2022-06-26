@@ -2,23 +2,23 @@
    "name": "pgchess",
    "abstract": "A Chess extension",
    "description": "This extension provides tools to play Chess. Includes an AI player.",
-   "version": "0.1.7",
+   "version": "0.1.8",
    "maintainer": [
-      "Gianni Ciolli <gianni.ciolli@2ndQuadrant.it>"
+      "Gianni Ciolli <gianni.ciolli@enterprisedb.com>"
    ],
    "license": "gpl_3",
    "provides": {
       "pgchess": {
          "abstract": "A Chess extension",
-         "file": "sql/pgchess.sql",
+         "file": "pgchess.sql",
          "docfile": "doc/pgchess-QUICKSTART.md",
-         "version": "0.1.7"
+         "version": "0.1.8"
       }
    },
    "prereqs": {
       "runtime": {
          "requires": {
-            "PostgreSQL": "9.1.0"
+            "PostgreSQL": "9.5.0"
          }
       }
    },
