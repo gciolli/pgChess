@@ -1,0 +1,3 @@
+src/*.bc
+src/*.o
+src/*.so
