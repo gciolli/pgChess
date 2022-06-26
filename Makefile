@@ -2,12 +2,10 @@ EXTENSION    = pgchess
 EXTVERSION   = $(shell grep default_version $(EXTENSION).control | \
                sed -e "s/default_version[[:space:]]*=[[:space:]]*'\([^']*\)'/\1/")
 
-DATA         = $(filter-out $(wildcard *--*.sql),$(wildcard *.sql))
+DATA         = $(EXTENSION).sql
 DOCS         = $(wildcard doc/*.md)
 
-## FIXME - regression tests are still not working
-REGRESS      = $(patsubst sql/%.sql,%,$(wildcard sql/c*.sql))
-#REGRESS_OPTS = --inputdir=test
+REGRESS      = basic
 
 MODULES      = $(patsubst %.c,%,$(wildcard src/*.c))
 PG_CONFIG    = pg_config
