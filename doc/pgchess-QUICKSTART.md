@@ -7,19 +7,18 @@ Notes
 We require extensions **pgchess** and **pg2podg**.
 
 The procedure described in this document has been tested on a PostgreSQL
-9.2 server, where pgchess version 0.1.7 and pg2podg version 0.1.3 have
+14 server, where pgchess version 0.1.8 and pg2podg version 0.1.3 have
 been installed.
 
-The SQL files in the `test/sql/play` directory make use of the
+The SQL files in the `play/` directory make use of the
 convenient `\ir` meta command, which was introduced on PostgreSQL 9.2;
-on PostgreSQL 9.1 it is necessary to rewrite such files using the `\i`
-meta command. Future versions of this extension will include a 9.1
-version of these files as well.
+this is not a restriction as we only consider currently supported
+versions of PostgreSQL.
 
 Step 1
 ------
 
-Install both extensions on a PostgreSQL 9.1+ server. You can use
+Install both extensions on a PostgreSQL server. You can use
 `pgxnclient`, for instance:
 
     pgxnclient install pgchess
@@ -32,8 +31,8 @@ Download and unpack the `pgchess` archive, which contains some
 additional files:
 
     pgxnclient download pgchess
-    unzip pgchess-0.1.7.zip
-    cd pgchess-0.1.7/test/sql
+    unzip pgchess-0.1.8.zip
+    cd pgchess-0.1.8
 
 Step 3
 ------
