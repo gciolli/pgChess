@@ -1,5 +1,5 @@
 -- pgchess, an extension for playing and analysing Chess games
--- Copyright (C) 2010, 2011, 2012 Gianni Ciolli <gianni.ciolli@2ndQuadrant.it>
+-- Copyright (C) 2010-2012, 2022 Gianni Ciolli <gianni.ciolli@enterprisedb.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
